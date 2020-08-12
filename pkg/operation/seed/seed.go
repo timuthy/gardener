@@ -629,7 +629,7 @@ func BootstrapCluster(k8sGardenClient, k8sSeedClient kubernetes.Interface, seed 
 			"enabled": vpaEnabled,
 			"runtime": map[string]interface{}{
 				"deploymentLabels": map[string]interface{}{
-					v1beta1constants.GardenRole: v1beta1constants.GardenRoleSeed,
+					v1beta1constants.GardenRole: v1beta1constants.GardenRoleVPA,
 				},
 				"admissionController": map[string]interface{}{
 					"podAnnotations": map[string]interface{}{

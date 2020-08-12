@@ -39,7 +39,7 @@ spec:
     - podSelector:
         matchLabels:
           app: vpa-exporter
-          garden.sapcloud.io/role: vpa
+          gardener.cloud/role: vpa
       namespaceSelector:
         matchLabels:
           role: garden
