@@ -728,5 +728,77 @@ var _ = Describe("dns", func() {
 				})
 			})
 		})
+
+		Context("Shoot Control Plane Migration", func() {
+			var (
+				destinationSeedName = "my-seed-2"
+				destinationSeed     core.Seed
+			)
+
+			BeforeEach(func() {
+				destinationSeed = core.Seed{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: destinationSeedName,
+					},
+					Spec: core.SeedSpec{
+						Settings: &core.SeedSettings{
+							ShootDNS: &core.SeedSettingShootDNS{
+								Enabled: true,
+							},
+						},
+					},
+				}
+
+				shoot.Spec.DNS.Providers = nil
+			})
+
+			It("should accept shoot migration update because new and old seeds support DNS", func() {
+				shootDomain := fmt.Sprintf("%s.%s.%s", shoot.Name, project.Name, domain)
+				shoot.Spec.DNS.Domain = &shootDomain
+
+				Expect(coreInformerFactory.Core().InternalVersion().Projects().Informer().GetStore().Add(&project)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&seed)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&destinationSeed)).To(Succeed())
+
+				shoot.Spec.SeedName = &destinationSeedName
+				attrs := admission.NewAttributesRecord(&shoot, &shoot, core.Kind("Shoot").WithVersion("version"), shoot.Namespace, shoot.Name, core.Resource("shoots").WithVersion("version"), "", admission.Update, &metav1.UpdateOptions{}, false, nil)
+
+				err := admissionHandler.Admit(context.TODO(), attrs, nil)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should reject shoot migration update because the new seed does not support DNS", func() {
+				shootDomain := fmt.Sprintf("%s.%s.%s", shoot.Name, project.Name, domain)
+				shoot.Spec.DNS.Domain = &shootDomain
+
+				destinationSeed.Spec.Settings.ShootDNS.Enabled = false
+
+				Expect(coreInformerFactory.Core().InternalVersion().Projects().Informer().GetStore().Add(&project)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&seed)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&destinationSeed)).To(Succeed())
+
+				newShoot := (&shoot).DeepCopy()
+				newShoot.Spec.SeedName = &destinationSeedName
+				attrs := admission.NewAttributesRecord(newShoot, &shoot, core.Kind("Shoot").WithVersion("version"), shoot.Namespace, shoot.Name, core.Resource("shoots").WithVersion("version"), "", admission.Update, &metav1.UpdateOptions{}, false, nil)
+
+				err := admissionHandler.Admit(context.TODO(), attrs, nil)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should reject shoot migration update because the old seed does not support DNS", func() {
+				seed.Spec.Settings.ShootDNS.Enabled = false
+
+				Expect(coreInformerFactory.Core().InternalVersion().Projects().Informer().GetStore().Add(&project)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&seed)).To(Succeed())
+				Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&destinationSeed)).To(Succeed())
+
+				newShoot := (&shoot).DeepCopy()
+				newShoot.Spec.SeedName = &destinationSeedName
+				attrs := admission.NewAttributesRecord(newShoot, &shoot, core.Kind("Shoot").WithVersion("version"), shoot.Namespace, shoot.Name, core.Resource("shoots").WithVersion("version"), "", admission.Update, &metav1.UpdateOptions{}, false, nil)
+
+				err := admissionHandler.Admit(context.TODO(), attrs, nil)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 })
