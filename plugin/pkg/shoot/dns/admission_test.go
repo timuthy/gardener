@@ -699,6 +699,22 @@ var _ = Describe("dns", func() {
 					Expect(*shoot.Spec.DNS.Domain).To(HaveSuffix(fmt.Sprintf(".%s.%s", projectName, domain)))
 				})
 
+				It("should pass because a default domain was re-assigned for the shoot (no domain)", func() {
+					oldShoot := shoot.DeepCopy()
+					shoot.Spec.DNS = nil
+
+					Expect(kubeInformerFactory.Core().V1().Secrets().Informer().GetStore().Add(&defaultDomainSecret)).To(Succeed())
+					Expect(coreInformerFactory.Core().InternalVersion().Projects().Informer().GetStore().Add(&project)).To(Succeed())
+					Expect(coreInformerFactory.Core().InternalVersion().Seeds().Informer().GetStore().Add(&seed)).To(Succeed())
+					attrs := admission.NewAttributesRecord(&shoot, oldShoot, core.Kind("Shoot").WithVersion("version"), shoot.Namespace, shoot.Name, core.Resource("shoots").WithVersion("version"), "", admission.Update, &metav1.UpdateOptions{}, false, nil)
+
+					err := admissionHandler.Admit(context.TODO(), attrs, nil)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(shoot.Spec.DNS.Providers).To(BeNil())
+					Expect(*shoot.Spec.DNS.Domain).To(HaveSuffix(fmt.Sprintf(".%s.%s", projectName, domain)))
+				})
+
 				It("should reject because a default domain was already used for the shoot but is invalid (with domain)", func() {
 					shootDomain := fmt.Sprintf("%s.other-project.%s", shoot.Name, domain)
 					shoot.Spec.DNS.Domain = &shootDomain

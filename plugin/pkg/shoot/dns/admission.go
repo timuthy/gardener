@@ -202,7 +202,9 @@ func (d *DNS) Admit(ctx context.Context, a admission.Attributes, o admission.Obj
 					return err
 				}
 			}
-			return checkFunctionlessDNSProviders(shoot.Spec.DNS)
+			if shoot.Spec.DNS != nil {
+				return checkFunctionlessDNSProviders(shoot.Spec.DNS)
+			}
 		}
 	}
 
@@ -229,21 +231,20 @@ func (d *DNS) Admit(ctx context.Context, a admission.Attributes, o admission.Obj
 		}
 	}
 
-	if err := setPrimaryDNSProvider(shoot.Spec.DNS, defaultDomains); err != nil {
-		return err
+	if shoot.Spec.DNS != nil {
+		if err := setPrimaryDNSProvider(shoot.Spec.DNS, defaultDomains); err != nil {
+			return err
+		}
+		if err := checkFunctionlessDNSProviders(shoot.Spec.DNS); err != nil {
+			return err
+		}
 	}
-	if err := checkFunctionlessDNSProviders(shoot.Spec.DNS); err != nil {
-		return err
-	}
+
 	return nil
 }
 
 // checkFunctionlessDNSProviders returns an error if a non-primary provider isn't configured correctly.
 func checkFunctionlessDNSProviders(dns *core.DNS) error {
-	if dns == nil {
-		return nil
-	}
-
 	for _, provider := range dns.Providers {
 		if !gardenerutils.IsTrue(provider.Primary) && (provider.Type == nil || provider.SecretName == nil) {
 			return apierrors.NewBadRequest("non-primary DNS providers in .spec.dns.providers must specify a `type` and `secretName`")
