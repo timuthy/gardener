@@ -43,6 +43,7 @@ import (
 	"github.com/gardener/gardener/pkg/operation/common"
 	"github.com/gardener/gardener/pkg/operation/seed/istio"
 	"github.com/gardener/gardener/pkg/operation/seed/scheduler"
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	"github.com/gardener/gardener/pkg/utils/flow"
@@ -548,7 +549,10 @@ func BootstrapCluster(ctx context.Context, k8sGardenClient, k8sSeedClient kubern
 	)
 
 	if monitoringCredentials != nil {
-		monitoringBasicAuth = utils.CreateSHA1Secret(monitoringCredentials.Data[secretsutils.DataKeyUserName], monitoringCredentials.Data[secretsutils.DataKeyPassword])
+		monitoringBasicAuth = utils.CreateSHA1Secret(
+			monitoringCredentials.Data[v1alpha1.DataKeyUserName],
+			monitoringCredentials.Data[v1alpha1.DataKeyPassword],
+		)
 	}
 	applierOptions[vpaGK] = retainStatusInformation
 	applierOptions[hvpaGK] = retainStatusInformation

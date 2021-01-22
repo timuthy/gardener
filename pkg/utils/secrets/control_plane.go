@@ -17,6 +17,7 @@ package secrets
 import (
 	"fmt"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/infodata"
 )
@@ -170,8 +171,8 @@ func (c *ControlPlane) SecretData() map[string][]byte {
 	}
 
 	if c.BasicAuth != nil {
-		data[DataKeyUserName] = []byte(c.BasicAuth.Username)
-		data[DataKeyPassword] = []byte(c.BasicAuth.Password)
+		data[v1alpha1.DataKeyUserName] = []byte(c.BasicAuth.Username)
+		data[v1alpha1.DataKeyPassword] = []byte(c.BasicAuth.Password)
 	}
 
 	if c.Token != nil {

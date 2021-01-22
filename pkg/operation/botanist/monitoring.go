@@ -27,9 +27,9 @@ import (
 	gardenletfeatures "github.com/gardener/gardener/pkg/gardenlet/features"
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
 	"github.com/gardener/gardener/pkg/operation/common"
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
-	"github.com/gardener/gardener/pkg/utils/secrets"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,8 +52,8 @@ func (b *Botanist) DeploySeedMonitoring(ctx context.Context) error {
 	var (
 		credentials         = b.Secrets["monitoring-ingress-credentials"]
 		credentialsUsers    = b.Secrets["monitoring-ingress-credentials-users"]
-		basicAuth           = utils.CreateSHA1Secret(credentials.Data[secrets.DataKeyUserName], credentials.Data[secrets.DataKeyPassword])
-		basicAuthUsers      = utils.CreateSHA1Secret(credentialsUsers.Data[secrets.DataKeyUserName], credentialsUsers.Data[secrets.DataKeyPassword])
+		basicAuth           = utils.CreateSHA1Secret(credentials.Data[v1alpha1.DataKeyUserName], credentials.Data[v1alpha1.DataKeyPassword])
+		basicAuthUsers      = utils.CreateSHA1Secret(credentialsUsers.Data[v1alpha1.DataKeyUserName], credentialsUsers.Data[v1alpha1.DataKeyPassword])
 		alertingRules       = strings.Builder{}
 		scrapeConfigs       = strings.Builder{}
 		operatorsDashboards = strings.Builder{}

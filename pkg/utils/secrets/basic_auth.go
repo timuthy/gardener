@@ -18,58 +18,44 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/infodata"
 	"k8s.io/apiserver/pkg/authentication/user"
 )
 
-type formatType string
-
-const (
-	// BasicAuthFormatNormal indicates that the data map should be rendered the normal way (dedicated keys for
-	// username and password.
-	BasicAuthFormatNormal formatType = "normal"
-	// BasicAuthFormatCSV indicates that the data map should be rendered in the CSV-format.
-	BasicAuthFormatCSV formatType = "csv"
-
-	// DataKeyCSV is the key in a secret data holding the CSV format of a secret.
-	DataKeyCSV = "basic_auth.csv"
-	// DataKeyUserName is the key in a secret data holding the username.
-	DataKeyUserName = "username"
-	// DataKeyPassword is the key in a secret data holding the password.
-	DataKeyPassword = "password"
-)
-
-// BasicAuthSecretConfig contains the specification for a to-be-generated basic authentication secret.
-type BasicAuthSecretConfig struct {
-	Name   string
-	Format formatType
-
-	Username       string
-	PasswordLength int
-}
-
 // BasicAuth contains the username, the password, optionally hash of the password and the format for serializing the basic authentication
 type BasicAuth struct {
 	Name   string
-	Format formatType
+	Format v1alpha1.FormatType
 
 	Username string
 	Password string
 }
 
+// NewBasicAuthSecretConfigManager creates a new basic auth secret manager with the given config.
+func NewBasicAuthSecretConfigManager(config v1alpha1.BasicAuthSecretConfig) ConfigInterface {
+	return &basicAuthSecretConfigManager{
+		BasicAuthSecretConfig: config,
+	}
+}
+
+type basicAuthSecretConfigManager struct {
+	v1alpha1.BasicAuthSecretConfig
+}
+
 // GetName returns the name of the secret.
-func (s *BasicAuthSecretConfig) GetName() string {
+func (s *basicAuthSecretConfigManager) GetName() string {
 	return s.Name
 }
 
 // Generate implements ConfigInterface.
-func (s *BasicAuthSecretConfig) Generate() (DataInterface, error) {
+func (s *basicAuthSecretConfigManager) Generate() (DataInterface, error) {
 	return s.GenerateBasicAuth()
 }
 
 // GenerateInfoData implements ConfigInterface.
-func (s *BasicAuthSecretConfig) GenerateInfoData() (infodata.InfoData, error) {
+func (s *basicAuthSecretConfigManager) GenerateInfoData() (infodata.InfoData, error) {
 	password, err := utils.GenerateRandomString(s.PasswordLength)
 	if err != nil {
 		return nil, err
@@ -79,7 +65,7 @@ func (s *BasicAuthSecretConfig) GenerateInfoData() (infodata.InfoData, error) {
 }
 
 // GenerateFromInfoData implements ConfigInteface
-func (s *BasicAuthSecretConfig) GenerateFromInfoData(infoData infodata.InfoData) (DataInterface, error) {
+func (s *basicAuthSecretConfigManager) GenerateFromInfoData(infoData infodata.InfoData) (DataInterface, error) {
 	data, ok := infoData.(*BasicAuthInfoData)
 	if !ok {
 		return nil, fmt.Errorf("could not convert InfoData entry %s to BasicAuthInfoData", s.Name)
@@ -90,16 +76,16 @@ func (s *BasicAuthSecretConfig) GenerateFromInfoData(infoData infodata.InfoData)
 }
 
 // LoadFromSecretData implements infodata.Loader
-func (s *BasicAuthSecretConfig) LoadFromSecretData(secretData map[string][]byte) (infodata.InfoData, error) {
+func (s *basicAuthSecretConfigManager) LoadFromSecretData(secretData map[string][]byte) (infodata.InfoData, error) {
 	var password string
 
 	switch s.Format {
-	case BasicAuthFormatNormal:
-		password = string(secretData[DataKeyPassword])
-	case BasicAuthFormatCSV:
-		csv := strings.Split(string(secretData[DataKeyCSV]), ",")
+	case v1alpha1.BasicAuthFormatNormal:
+		password = string(secretData[v1alpha1.DataKeyPassword])
+	case v1alpha1.BasicAuthFormatCSV:
+		csv := strings.Split(string(secretData[v1alpha1.DataKeyCSV]), ",")
 		if len(csv) < 2 {
-			return nil, fmt.Errorf("invalid CSV for loading basic auth data: %s", string(secretData[DataKeyCSV]))
+			return nil, fmt.Errorf("invalid CSV for loading basic auth data: %s", string(secretData[v1alpha1.DataKeyCSV]))
 		}
 		password = csv[0]
 	}
@@ -109,7 +95,7 @@ func (s *BasicAuthSecretConfig) LoadFromSecretData(secretData map[string][]byte)
 
 // GenerateBasicAuth computes a username,password and the hash of the password keypair. It uses "admin" as username and generates a
 // random password of length 32.
-func (s *BasicAuthSecretConfig) GenerateBasicAuth() (*BasicAuth, error) {
+func (s *basicAuthSecretConfigManager) GenerateBasicAuth() (*BasicAuth, error) {
 	password, err := utils.GenerateRandomString(s.PasswordLength)
 	if err != nil {
 		return nil, err
@@ -119,7 +105,7 @@ func (s *BasicAuthSecretConfig) GenerateBasicAuth() (*BasicAuth, error) {
 }
 
 // generateWithPassword returns a BasicAuth secret DataInterface with the given password.
-func (s *BasicAuthSecretConfig) generateWithPassword(password string) (*BasicAuth, error) {
+func (s *basicAuthSecretConfigManager) generateWithPassword(password string) (*BasicAuth, error) {
 	basicAuth := &BasicAuth{
 		Name:   s.Name,
 		Format: s.Format,
@@ -136,14 +122,14 @@ func (b *BasicAuth) SecretData() map[string][]byte {
 	data := map[string][]byte{}
 
 	switch b.Format {
-	case BasicAuthFormatNormal:
-		data[DataKeyUserName] = []byte(b.Username)
-		data[DataKeyPassword] = []byte(b.Password)
+	case v1alpha1.BasicAuthFormatNormal:
+		data[v1alpha1.DataKeyUserName] = []byte(b.Username)
+		data[v1alpha1.DataKeyPassword] = []byte(b.Password)
 
 		fallthrough
 
-	case BasicAuthFormatCSV:
-		data[DataKeyCSV] = []byte(fmt.Sprintf("%s,%s,%s,%s", b.Password, b.Username, b.Username, user.SystemPrivilegedGroup))
+	case v1alpha1.BasicAuthFormatCSV:
+		data[v1alpha1.DataKeyCSV] = []byte(fmt.Sprintf("%s,%s,%s,%s", b.Password, b.Username, b.Username, user.SystemPrivilegedGroup))
 	}
 
 	return data

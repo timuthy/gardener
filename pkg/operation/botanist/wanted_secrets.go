@@ -26,18 +26,21 @@ import (
 	"github.com/gardener/gardener/pkg/operation/botanist/controlplane/kubescheduler"
 	"github.com/gardener/gardener/pkg/operation/botanist/systemcomponents/metricsserver"
 	"github.com/gardener/gardener/pkg/operation/common"
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/secrets"
 
 	"k8s.io/apiserver/pkg/authentication/user"
 )
 
-var basicAuthSecretAPIServer = &secrets.BasicAuthSecretConfig{
-	Name:           common.BasicAuthSecretName,
-	Format:         secrets.BasicAuthFormatCSV,
-	Username:       "admin",
-	PasswordLength: 32,
-}
+var basicAuthSecretAPIServer = secrets.NewBasicAuthSecretConfigManager(
+	v1alpha1.BasicAuthSecretConfig{
+		Name:           common.BasicAuthSecretName,
+		Format:         v1alpha1.BasicAuthFormatCSV,
+		Username:       "admin",
+		PasswordLength: 32,
+	},
+)
 
 var wantedCertificateAuthorities = map[string]*secrets.CertificateSecretConfig{
 	v1beta1constants.SecretNameCACluster: {
@@ -439,22 +442,26 @@ func (b *Botanist) generateWantedSecretConfigs(basicAuthAPIServer *secrets.Basic
 		},
 
 		// Secret definition for monitoring
-		&secrets.BasicAuthSecretConfig{
-			Name:   "monitoring-ingress-credentials",
-			Format: secrets.BasicAuthFormatNormal,
+		secrets.NewBasicAuthSecretConfigManager(
+			v1alpha1.BasicAuthSecretConfig{
+				Name:   "monitoring-ingress-credentials",
+				Format: v1alpha1.BasicAuthFormatNormal,
 
-			Username:       "admin",
-			PasswordLength: 32,
-		},
+				Username:       "admin",
+				PasswordLength: 32,
+			},
+		),
 
 		// Secret definition for monitoring for shoot owners
-		&secrets.BasicAuthSecretConfig{
-			Name:   "monitoring-ingress-credentials-users",
-			Format: secrets.BasicAuthFormatNormal,
+		secrets.NewBasicAuthSecretConfigManager(
+			v1alpha1.BasicAuthSecretConfig{
+				Name:   "monitoring-ingress-credentials-users",
+				Format: v1alpha1.BasicAuthFormatNormal,
 
-			Username:       "admin",
-			PasswordLength: 32,
-		},
+				Username:       "admin",
+				PasswordLength: 32,
+			},
+		),
 
 		// Secret definition for ssh-keypair
 		&secrets.RSASecretConfig{

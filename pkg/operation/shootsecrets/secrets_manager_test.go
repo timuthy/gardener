@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
+
 	gardencorev1alpha1 "github.com/gardener/gardener/pkg/apis/core/v1alpha1"
 	gardencorev1alpha1helper "github.com/gardener/gardener/pkg/apis/core/v1alpha1/helper"
 	"github.com/gardener/gardener/pkg/utils"
@@ -42,10 +44,11 @@ var _ = Describe("SecretsManager", func() {
 	}
 
 	var (
-		staticTokenConfig            *secrets.StaticTokenSecretConfig
-		apiServerBasicAuthConfig     *secrets.BasicAuthSecretConfig
-		wantedCertificateAuthorities map[string]*secrets.CertificateSecretConfig
-		secretsConfigGenerator       func(basicAuthAPIServer *secrets.BasicAuth, staticToken *secrets.StaticToken, certificateAuthorities map[string]*secrets.Certificate) ([]secrets.ConfigInterface, error)
+		staticTokenConfig               *secrets.StaticTokenSecretConfig
+		apiServerBasicAuthConfig        v1alpha1.BasicAuthSecretConfig
+		apiServerBasicAuthConfigManager secrets.ConfigInterface
+		wantedCertificateAuthorities    map[string]*secrets.CertificateSecretConfig
+		secretsConfigGenerator          func(basicAuthAPIServer *secrets.BasicAuth, staticToken *secrets.StaticToken, certificateAuthorities map[string]*secrets.Certificate) ([]secrets.ConfigInterface, error)
 
 		caName   = "ca1"
 		certName = "cert1"
@@ -75,12 +78,14 @@ var _ = Describe("SecretsManager", func() {
 			},
 		}
 
-		apiServerBasicAuthConfig = &secrets.BasicAuthSecretConfig{
+		apiServerBasicAuthConfig = v1alpha1.BasicAuthSecretConfig{
 			Name:           "basic-auth",
-			Format:         secrets.BasicAuthFormatCSV,
+			Format:         v1alpha1.BasicAuthFormatCSV,
 			Username:       "admin",
 			PasswordLength: 32,
 		}
+
+		apiServerBasicAuthConfigManager = secrets.NewBasicAuthSecretConfigManager(apiServerBasicAuthConfig)
 
 		wantedCertificateAuthorities = map[string]*secrets.CertificateSecretConfig{
 			caName: {
@@ -107,7 +112,7 @@ var _ = Describe("SecretsManager", func() {
 	Describe("#Generate", func() {
 		It("should generate secrets infodata and save it into the gardener resource data list", func() {
 			secretsManager := NewSecretsManager(gardencorev1alpha1helper.GardenerResourceDataList{}, staticTokenConfig, wantedCertificateAuthorities, secretsConfigGenerator)
-			secretsManager.WithAPIServerBasicAuthConfig(apiServerBasicAuthConfig)
+			secretsManager.WithAPIServerBasicAuthConfig(apiServerBasicAuthConfigManager)
 			err := secretsManager.Generate()
 			Expect(err).NotTo(HaveOccurred())
 
@@ -138,7 +143,7 @@ var _ = Describe("SecretsManager", func() {
 			}
 
 			secretsManager := NewSecretsManager(resourceDataList, staticTokenConfig, wantedCertificateAuthorities, secretsConfigGenerator)
-			secretsManager.WithAPIServerBasicAuthConfig(apiServerBasicAuthConfig)
+			secretsManager.WithAPIServerBasicAuthConfig(apiServerBasicAuthConfigManager)
 			err := secretsManager.Generate()
 			Expect(err).NotTo(HaveOccurred())
 
@@ -283,7 +288,7 @@ var _ = Describe("SecretsManager", func() {
 					},
 					Type: corev1.SecretTypeOpaque,
 					Data: map[string][]byte{
-						secrets.DataKeyCSV: []byte("pass,admin,admin,system:masters"),
+						v1alpha1.DataKeyCSV: []byte("pass,admin,admin,system:masters"),
 					},
 				},
 				staticTokenConfig.Name: {
@@ -345,7 +350,7 @@ var _ = Describe("SecretsManager", func() {
 			)
 
 			secretsManager := NewSecretsManager(gardenerResourceDataList, staticTokenConfig, wantedCertificateAuthorities, secretsConfigGenerator)
-			err = secretsManager.WithExistingSecrets(map[string]*corev1.Secret{}).WithAPIServerBasicAuthConfig(apiServerBasicAuthConfig).Deploy(context.TODO(), k8sClient, controlplaneNS)
+			err = secretsManager.WithExistingSecrets(map[string]*corev1.Secret{}).WithAPIServerBasicAuthConfig(apiServerBasicAuthConfigManager).Deploy(context.TODO(), k8sClient, controlplaneNS)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(expectedSecrets).To(Equal(secretsManager.DeployedSecrets))

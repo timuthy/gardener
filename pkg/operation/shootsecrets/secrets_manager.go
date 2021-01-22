@@ -37,7 +37,7 @@ type SecretConfigGeneratorFunc func(*secrets.BasicAuth, *secrets.StaticToken, ma
 // It uses these configurations to generate new secret infodata and save it into the ShootState
 // or create kubernetes secret objects from infodata available in the ShootState and deploy them.
 type SecretsManager struct {
-	apiServerBasicAuthConfig    *secrets.BasicAuthSecretConfig
+	apiServerBasicAuthConfig    secrets.ConfigInterface
 	staticTokenConfig           *secrets.StaticTokenSecretConfig
 	certificateAuthorityConfigs map[string]*secrets.CertificateSecretConfig
 	secretConfigGenerator       SecretConfigGeneratorFunc
@@ -78,7 +78,7 @@ func (s *SecretsManager) WithExistingSecrets(existingSecrets map[string]*corev1.
 }
 
 // WithAPIServerBasicAuthConfig adds the provided basic auth secret configuration to the SecretsManager
-func (s *SecretsManager) WithAPIServerBasicAuthConfig(config *secrets.BasicAuthSecretConfig) *SecretsManager {
+func (s *SecretsManager) WithAPIServerBasicAuthConfig(config secrets.ConfigInterface) *SecretsManager {
 	s.apiServerBasicAuthConfig = config
 	return s
 }
