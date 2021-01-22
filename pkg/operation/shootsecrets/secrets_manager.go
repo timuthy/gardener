@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
+
 	gardencorev1alpha1helper "github.com/gardener/gardener/pkg/apis/core/v1alpha1/helper"
 	"github.com/gardener/gardener/pkg/operation/common"
 	"github.com/gardener/gardener/pkg/utils/infodata"
@@ -39,7 +41,7 @@ type SecretConfigGeneratorFunc func(*secrets.BasicAuth, *secrets.StaticToken, ma
 type SecretsManager struct {
 	apiServerBasicAuthConfig    secrets.ConfigInterface
 	staticTokenConfig           *secrets.StaticTokenSecretConfig
-	certificateAuthorityConfigs map[string]*secrets.CertificateSecretConfig
+	certificateAuthorityConfigs map[string]*v1alpha1.CertificateSecretConfig
 	secretConfigGenerator       SecretConfigGeneratorFunc
 
 	apiServerBasicAuth     *secrets.BasicAuth
@@ -57,7 +59,7 @@ type SecretsManager struct {
 func NewSecretsManager(
 	gardenerResourceDataList gardencorev1alpha1helper.GardenerResourceDataList,
 	staticTokenConfig *secrets.StaticTokenSecretConfig,
-	certificateAuthorityConfigs map[string]*secrets.CertificateSecretConfig,
+	certificateAuthorityConfigs map[string]*v1alpha1.CertificateSecretConfig,
 	secretConfigGenerator SecretConfigGeneratorFunc,
 ) *SecretsManager {
 	return &SecretsManager{

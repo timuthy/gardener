@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"net"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
 
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils"
@@ -36,52 +37,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-type CertType string
-
-const (
-	// CACert indicates that the certificate should be a certificate authority.
-	CACert CertType = "ca"
-	// ServerCert indicates that the certificate should have the ExtKeyUsageServerAuth usage.
-	ServerCert CertType = "server"
-	// ClientCert indicates that the certificate should have the ExtKeyUsageClientAuth usage.
-	ClientCert CertType = "client"
-	// ServerClientCert indicates that the certificate should have both the ExtKeyUsageServerAuth and ExtKeyUsageClientAuth usage.
-	ServerClientCert CertType = "both"
-
-	// DataKeyCertificate is the key in a secret data holding the certificate.
-	DataKeyCertificate = "tls.crt"
-	// DataKeyPrivateKey is the key in a secret data holding the private key.
-	DataKeyPrivateKey = "tls.key"
-	// DataKeyCertificateCA is the key in a secret data holding the CA certificate.
-	DataKeyCertificateCA = "ca.crt"
-	// DataKeyPrivateKeyCA is the key in a secret data holding the CA private key.
-	DataKeyPrivateKeyCA = "ca.key"
-)
-
-const (
-	// PKCS1 certificate format
-	PKCS1 = iota
-	// PKCS8 certificate format
-	PKCS8
-)
-
-// CertificateSecretConfig contains the specification a to-be-generated CA, server, or client certificate.
-// It always contains a 2048-bit RSA private key.
-type CertificateSecretConfig struct {
-	Name string
-
-	CommonName   string
-	Organization []string
-	DNSNames     []string
-	IPAddresses  []net.IP
-
-	CertType  CertType
-	SigningCA *Certificate
-	PKCS      int
-
-	Validity *time.Duration
-}
 
 // Certificate contains the private key, and the certificate. It does also contain the CA certificate
 // in case it is no CA. Otherwise, the <CA> field is nil.
@@ -97,18 +52,31 @@ type Certificate struct {
 	CertificatePEM []byte
 }
 
+type certificateSecretConfigManager struct {
+	v1alpha1.CertificateSecretConfig
+	signingCA *Certificate
+}
+
+// NewCertificateSecretConfigManager creates a new certificate secret manager with the given config and signing CA.
+func NewCertificateSecretConfigManager(config v1alpha1.CertificateSecretConfig, signingCA *Certificate) ConfigInterface {
+	return &certificateSecretConfigManager{
+		CertificateSecretConfig: config,
+		signingCA:               signingCA,
+	}
+}
+
 // GetName returns the name of the secret.
-func (s *CertificateSecretConfig) GetName() string {
+func (s *certificateSecretConfigManager) GetName() string {
 	return s.Name
 }
 
 // Generate implements ConfigInterface.
-func (s *CertificateSecretConfig) Generate() (DataInterface, error) {
+func (s *certificateSecretConfigManager) Generate() (DataInterface, error) {
 	return s.GenerateCertificate()
 }
 
 // GenerateInfoData implements ConfigInterface
-func (s *CertificateSecretConfig) GenerateInfoData() (infodata.InfoData, error) {
+func (s *certificateSecretConfigManager) GenerateInfoData() (infodata.InfoData, error) {
 	data, err := s.GenerateCertificate()
 	if err != nil {
 		return nil, err
@@ -123,23 +91,23 @@ func (s *CertificateSecretConfig) GenerateInfoData() (infodata.InfoData, error) 
 }
 
 // GenerateFromInfoData implements ConfigInterface
-func (s *CertificateSecretConfig) GenerateFromInfoData(infoData infodata.InfoData) (DataInterface, error) {
+func (s *certificateSecretConfigManager) GenerateFromInfoData(infoData infodata.InfoData) (DataInterface, error) {
 	data, ok := infoData.(*CertificateInfoData)
 	if !ok {
 		return nil, fmt.Errorf("could not convert InfoData entry %s to CertificateInfoData", s.Name)
 	}
 	certificateObj := &Certificate{
 		Name: s.Name,
-		CA:   s.SigningCA,
+		CA:   s.signingCA,
 
 		PrivateKeyPEM:  data.PrivateKey,
 		CertificatePEM: data.Certificate,
 	}
 
 	var err error
-	if s.PKCS == PKCS1 {
+	if s.PKCS == v1alpha1.PKCS1 {
 		certificateObj.PrivateKey, err = utils.DecodePrivateKey(data.PrivateKey)
-	} else if s.PKCS == PKCS8 {
+	} else if s.PKCS == v1alpha1.PKCS8 {
 		certificateObj.PrivateKey, err = utils.DecodeRSAPrivateKeyFromPKCS8(data.PrivateKey)
 	}
 	if err != nil {
@@ -154,27 +122,27 @@ func (s *CertificateSecretConfig) GenerateFromInfoData(infoData infodata.InfoDat
 }
 
 // LoadFromSecretData implements infodata.Loader
-func (s *CertificateSecretConfig) LoadFromSecretData(secretData map[string][]byte) (infodata.InfoData, error) {
+func (s *certificateSecretConfigManager) LoadFromSecretData(secretData map[string][]byte) (infodata.InfoData, error) {
 	var (
 		privateKeyPEM  []byte
 		certificatePEM []byte
 	)
-	if s.CertType == CACert {
-		privateKeyPEM = secretData[DataKeyPrivateKeyCA]
-		certificatePEM = secretData[DataKeyCertificateCA]
+	if s.CertType == v1alpha1.CACert {
+		privateKeyPEM = secretData[v1alpha1.DataKeyPrivateKeyCA]
+		certificatePEM = secretData[v1alpha1.DataKeyCertificateCA]
 	} else {
-		privateKeyPEM = secretData[DataKeyPrivateKey]
-		certificatePEM = secretData[DataKeyCertificate]
+		privateKeyPEM = secretData[v1alpha1.DataKeyPrivateKey]
+		certificatePEM = secretData[v1alpha1.DataKeyCertificate]
 	}
 
 	return NewCertificateInfoData(privateKeyPEM, certificatePEM), nil
 }
 
 // GenerateCertificate computes a CA, server, or client certificate based on the configuration.
-func (s *CertificateSecretConfig) GenerateCertificate() (*Certificate, error) {
+func (s *certificateSecretConfigManager) GenerateCertificate() (*Certificate, error) {
 	certificateObj := &Certificate{
 		Name: s.Name,
-		CA:   s.SigningCA,
+		CA:   s.signingCA,
 	}
 
 	// If no cert type is given then we only return a certificate object that contains the CA.
@@ -190,9 +158,9 @@ func (s *CertificateSecretConfig) GenerateCertificate() (*Certificate, error) {
 			privateKeySigner  = privateKey
 		)
 
-		if s.SigningCA != nil {
-			certificateSigner = s.SigningCA.Certificate
-			privateKeySigner = s.SigningCA.PrivateKey
+		if s.signingCA != nil {
+			certificateSigner = s.signingCA.Certificate
+			privateKeySigner = s.signingCA.PrivateKey
 		}
 
 		certificatePEM, err := signCertificate(certificate, privateKey, certificateSigner, privateKeySigner)
@@ -201,9 +169,9 @@ func (s *CertificateSecretConfig) GenerateCertificate() (*Certificate, error) {
 		}
 
 		var pk []byte
-		if s.PKCS == PKCS1 {
+		if s.PKCS == v1alpha1.PKCS1 {
 			pk = utils.EncodePrivateKey(privateKey)
-		} else if s.PKCS == PKCS8 {
+		} else if s.PKCS == v1alpha1.PKCS8 {
 			pk, err = utils.EncodePrivateKeyInPKCS8(privateKey)
 
 			if err != nil {
@@ -228,14 +196,14 @@ func (c *Certificate) SecretData() map[string][]byte {
 	case c.CA == nil:
 		// The certificate is a CA certificate itself, so we use different keys in the secret data (for backwards-
 		// compatibility).
-		data[DataKeyCertificateCA] = c.CertificatePEM
-		data[DataKeyPrivateKeyCA] = c.PrivateKeyPEM
+		data[v1alpha1.DataKeyCertificateCA] = c.CertificatePEM
+		data[v1alpha1.DataKeyPrivateKeyCA] = c.PrivateKeyPEM
 	case c.CA != nil:
 		// The certificate is not a CA certificate, so we add the signing CA certificate to it and use different
 		// keys in the secret data.
-		data[DataKeyPrivateKey] = c.PrivateKeyPEM
-		data[DataKeyCertificate] = c.CertificatePEM
-		data[DataKeyCertificateCA] = c.CA.CertificatePEM
+		data[v1alpha1.DataKeyPrivateKey] = c.PrivateKeyPEM
+		data[v1alpha1.DataKeyCertificate] = c.CertificatePEM
+		data[v1alpha1.DataKeyCertificateCA] = c.CA.CertificatePEM
 	}
 
 	return data
@@ -271,7 +239,7 @@ func LoadCAFromSecret(ctx context.Context, k8sClient client.Client, namespace, n
 		return nil, nil, err
 	}
 
-	certificate, err := LoadCertificate(name, secret.Data[DataKeyPrivateKeyCA], secret.Data[DataKeyCertificateCA])
+	certificate, err := LoadCertificate(name, secret.Data[v1alpha1.DataKeyPrivateKeyCA], secret.Data[v1alpha1.DataKeyCertificateCA])
 	if err != nil {
 		return nil, nil, err
 	}
@@ -283,7 +251,7 @@ func LoadCAFromSecret(ctx context.Context, k8sClient client.Client, namespace, n
 // common name, organization, SANs (DNS names and IP addresses). It can create a server or a client certificate
 // or both, depending on the <certType> value. If <isCACert> is true, then a CA certificate is being created.
 // The certificates a valid for 10 years.
-func (s *CertificateSecretConfig) generateCertificateTemplate() *x509.Certificate {
+func (s *certificateSecretConfigManager) generateCertificateTemplate() *x509.Certificate {
 	now := time.Now()
 	expiration := now.AddDate(10, 0, 0) // + 10 years
 	if s.Validity != nil {
@@ -292,7 +260,7 @@ func (s *CertificateSecretConfig) generateCertificateTemplate() *x509.Certificat
 
 	var (
 		serialNumber, _ = rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
-		isCA            = s.CertType == CACert
+		isCA            = s.CertType == v1alpha1.CACert
 
 		template = &x509.Certificate{
 			BasicConstraintsValid: true,
@@ -311,13 +279,13 @@ func (s *CertificateSecretConfig) generateCertificateTemplate() *x509.Certificat
 	)
 
 	switch s.CertType {
-	case CACert:
+	case v1alpha1.CACert:
 		template.KeyUsage |= x509.KeyUsageCertSign | x509.KeyUsageCRLSign
-	case ServerCert:
+	case v1alpha1.ServerCert:
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-	case ClientCert:
+	case v1alpha1.ClientCert:
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
-	case ServerClientCert:
+	case v1alpha1.ServerClientCert:
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	}
 
@@ -335,7 +303,7 @@ func signCertificate(certificateTemplate *x509.Certificate, privateKey *rsa.Priv
 	return utils.EncodeCertificate(certificate), nil
 }
 
-func generateCA(ctx context.Context, k8sClusterClient kubernetes.Interface, config *CertificateSecretConfig, namespace string) (*corev1.Secret, *Certificate, error) {
+func generateCA(ctx context.Context, k8sClusterClient kubernetes.Interface, config *certificateSecretConfigManager, namespace string) (*corev1.Secret, *Certificate, error) {
 	certificate, err := config.GenerateCertificate()
 	if err != nil {
 		return nil, nil, err
@@ -357,7 +325,7 @@ func generateCA(ctx context.Context, k8sClusterClient kubernetes.Interface, conf
 }
 
 func loadCA(name string, existingSecret *corev1.Secret) (*corev1.Secret, *Certificate, error) {
-	certificate, err := LoadCertificate(name, existingSecret.Data[DataKeyPrivateKeyCA], existingSecret.Data[DataKeyCertificateCA])
+	certificate, err := LoadCertificate(name, existingSecret.Data[v1alpha1.DataKeyPrivateKeyCA], existingSecret.Data[v1alpha1.DataKeyCertificateCA])
 	if err != nil {
 		return nil, nil, err
 	}
@@ -367,7 +335,7 @@ func loadCA(name string, existingSecret *corev1.Secret) (*corev1.Secret, *Certif
 // GenerateCertificateAuthorities get a map of wanted certificates and check If they exist in the existingSecretsMap based on the keys in the map. If they exist it get only the certificate from the corresponding
 // existing secret and makes a certificate DataInterface from the existing secret. If there is no existing secret contaning the wanted certificate, we make one certificate and with it we deploy in K8s cluster
 // a secret with that  certificate and then return the newly existing secret. The function returns a map of secrets contaning the wanted CA, a map with the wanted CA certificate and an error.
-func GenerateCertificateAuthorities(ctx context.Context, k8sClusterClient kubernetes.Interface, existingSecretsMap map[string]*corev1.Secret, wantedCertificateAuthorities map[string]*CertificateSecretConfig, namespace string) (map[string]*corev1.Secret, map[string]*Certificate, error) {
+func GenerateCertificateAuthorities(ctx context.Context, k8sClusterClient kubernetes.Interface, existingSecretsMap map[string]*corev1.Secret, wantedCertificateAuthorities map[string]*certificateSecretConfigManager, namespace string) (map[string]*corev1.Secret, map[string]*Certificate, error) {
 	type caOutput struct {
 		secret      *corev1.Secret
 		certificate *Certificate
@@ -386,7 +354,7 @@ func GenerateCertificateAuthorities(ctx context.Context, k8sClusterClient kubern
 		wg.Add(1)
 
 		if existingSecret, ok := existingSecretsMap[name]; !ok {
-			go func(config *CertificateSecretConfig) {
+			go func(config *certificateSecretConfigManager) {
 				defer wg.Done()
 				secret, certificate, err := generateCA(ctx, k8sClusterClient, config, namespace)
 				results <- &caOutput{secret, certificate, err}
@@ -427,7 +395,7 @@ func GenerateCertificateAuthorities(ctx context.Context, k8sClusterClient kubern
 const TemporaryDirectoryForSelfGeneratedTLSCertificatesPattern = "self-generated-server-certificates-"
 
 // SelfGenerateTLSServerCertificate generates a new CA certificate and signs a server certificate with it. It'll store
-// the generated CA + server certificate bytes into a temporary directory with the default filenames, e.g. `DataKeyCertificateCA`.
+// the generated CA + server certificate bytes into a temporary directory with the default filenames, e.g. `v1alpha1.DataKeyCertificateCA`.
 // The function will return the *Certificate object as well as the path of the temporary directory where the
 // certificates are stored.
 func SelfGenerateTLSServerCertificate(name string, dnsNames []string) (*Certificate, string, error) {
@@ -436,37 +404,42 @@ func SelfGenerateTLSServerCertificate(name string, dnsNames []string) (*Certific
 		return nil, "", err
 	}
 
-	caCertificateConfig := &CertificateSecretConfig{
-		Name:       name,
-		CommonName: name,
-		CertType:   CACert,
+	caCertificateConfig := &certificateSecretConfigManager{
+		CertificateSecretConfig: v1alpha1.CertificateSecretConfig{
+			Name:       name,
+			CommonName: name,
+			CertType:   v1alpha1.CACert,
+		},
 	}
+
 	caCertificate, err := caCertificateConfig.GenerateCertificate()
 	if err != nil {
 		return nil, "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(tempDir, DataKeyCertificateCA), caCertificate.CertificatePEM, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(tempDir, v1alpha1.DataKeyCertificateCA), caCertificate.CertificatePEM, 0644); err != nil {
 		return nil, "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(tempDir, DataKeyPrivateKeyCA), caCertificate.PrivateKeyPEM, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(tempDir, v1alpha1.DataKeyPrivateKeyCA), caCertificate.PrivateKeyPEM, 0644); err != nil {
 		return nil, "", err
 	}
 
-	certificateConfig := &CertificateSecretConfig{
-		Name:       name,
-		CommonName: name,
-		DNSNames:   dnsNames,
-		CertType:   ServerCert,
-		SigningCA:  caCertificate,
+	certificateConfig := &certificateSecretConfigManager{
+		CertificateSecretConfig: v1alpha1.CertificateSecretConfig{
+			Name:       name,
+			CommonName: name,
+			DNSNames:   dnsNames,
+			CertType:   v1alpha1.ServerCert,
+		},
+		signingCA: caCertificate,
 	}
 	certificate, err := certificateConfig.GenerateCertificate()
 	if err != nil {
 		return nil, "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(tempDir, DataKeyCertificate), certificate.CertificatePEM, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(tempDir, v1alpha1.DataKeyCertificate), certificate.CertificatePEM, 0644); err != nil {
 		return nil, "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(tempDir, DataKeyPrivateKey), certificate.PrivateKeyPEM, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(tempDir, v1alpha1.DataKeyPrivateKey), certificate.PrivateKeyPEM, 0644); err != nil {
 		return nil, "", err
 	}
 

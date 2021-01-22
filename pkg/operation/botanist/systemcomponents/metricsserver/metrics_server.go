@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
+
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
@@ -25,7 +27,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
-	"github.com/gardener/gardener/pkg/utils/secrets"
 
 	resourcesv1alpha1 "github.com/gardener/gardener-resource-manager/pkg/apis/resources/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -250,7 +251,7 @@ func (m *metricsServer) computeResourcesData() (map[string][]byte, error) {
 				GroupPriorityMinimum: 100,
 				Version:              "v1beta1",
 				VersionPriority:      100,
-				CABundle:             m.secrets.CA.Data[secrets.DataKeyCertificateCA],
+				CABundle:             m.secrets.CA.Data[v1alpha1.DataKeyCertificateCA],
 			},
 		}
 
@@ -318,8 +319,8 @@ func (m *metricsServer) computeResourcesData() (map[string][]byte, error) {
 								// We should remove this flag once it is possible to specify the CA of the kubelet.
 								"--kubelet-insecure-tls",
 								"--kubelet-preferred-address-types=[Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP]",
-								fmt.Sprintf("--tls-cert-file=%s/%s", volumeMountPathServer, secrets.DataKeyCertificate),
-								fmt.Sprintf("--tls-private-key-file=%s/%s", volumeMountPathServer, secrets.DataKeyPrivateKey),
+								fmt.Sprintf("--tls-cert-file=%s/%s", volumeMountPathServer, v1alpha1.DataKeyCertificate),
+								fmt.Sprintf("--tls-private-key-file=%s/%s", volumeMountPathServer, v1alpha1.DataKeyPrivateKey),
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{

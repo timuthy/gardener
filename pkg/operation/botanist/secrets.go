@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/gardener/gardener/pkg/secretsmanager/apis/v1alpha1"
+
 	gardencorev1alpha1helper "github.com/gardener/gardener/pkg/apis/core/v1alpha1/helper"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -119,7 +121,7 @@ func (b *Botanist) DeploySecrets(ctx context.Context) error {
 	}
 
 	if b.Shoot.WantsVerticalPodAutoscaler {
-		if err := b.storeStaticTokenAsSecrets(ctx, secretsManager.StaticToken, secretsManager.DeployedSecrets[v1beta1constants.SecretNameCACluster].Data[secrets.DataKeyCertificateCA], vpaSecrets); err != nil {
+		if err := b.storeStaticTokenAsSecrets(ctx, secretsManager.StaticToken, secretsManager.DeployedSecrets[v1beta1constants.SecretNameCACluster].Data[v1alpha1.DataKeyCertificateCA], vpaSecrets); err != nil {
 			return err
 		}
 	}
@@ -260,8 +262,8 @@ func (b *Botanist) storeStaticTokenAsSecrets(ctx context.Context, staticToken *s
 
 		if _, err := controllerutil.CreateOrUpdate(ctx, b.K8sSeedClient.Client(), secret, func() error {
 			secret.Data = map[string][]byte{
-				secrets.DataKeyToken:         []byte(token.Token),
-				secrets.DataKeyCertificateCA: caCert,
+				secrets.DataKeyToken:          []byte(token.Token),
+				v1alpha1.DataKeyCertificateCA: caCert,
 			}
 			return nil
 		}); err != nil {
