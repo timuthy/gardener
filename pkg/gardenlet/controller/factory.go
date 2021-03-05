@@ -128,7 +128,11 @@ func (f *GardenletControllerFactory) Run(ctx context.Context) error {
 		return fmt.Errorf("timed out waiting for Kube caches to sync")
 	}
 
-	secrets, err := garden.ReadGardenSecrets(f.k8sInformers, f.k8sGardenCoreInformers)
+	secrets, err := garden.ReadGardenSecrets(
+		f.k8sInformers.Core().V1().Secrets().Lister(),
+		f.k8sGardenCoreInformers.Core().V1beta1().Seeds().Lister(),
+		v1beta1constants.GardenNamespace,
+	)
 	runtime.Must(err)
 
 	if secret, ok := secrets[common.GardenRoleInternalDomain]; ok {
@@ -156,7 +160,7 @@ func (f *GardenletControllerFactory) Run(ctx context.Context) error {
 	var (
 		controllerInstallationController = controllerinstallationcontroller.NewController(f.clientMap, f.k8sGardenCoreInformers, f.cfg, f.recorder, gardenNamespace, f.gardenClusterIdentity)
 		seedController                   = seedcontroller.NewSeedController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.healthManager, secrets, imageVector, componentImageVectors, f.identity, f.cfg, f.recorder)
-		shootController                  = shootcontroller.NewShootController(f.clientMap, f.k8sGardenCoreInformers, f.cfg, f.identity, f.gardenClusterIdentity, secrets, imageVector, f.recorder)
+		shootController                  = shootcontroller.NewShootController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.cfg, f.identity, f.gardenClusterIdentity, imageVector, f.recorder)
 	)
 
 	backupBucketController, err := backupbucketcontroller.NewBackupBucketController(ctx, f.clientMap, f.cfg, f.recorder)

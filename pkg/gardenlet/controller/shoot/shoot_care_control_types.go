@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	kubecorev1informers "k8s.io/client-go/informers/core/v1"
+
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/core/informers/externalversions/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -28,7 +30,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -78,7 +79,7 @@ type NewOperationFunc func(
 	config *config.GardenletConfiguration,
 	gardenerInfo *gardencorev1beta1.Gardener,
 	gardenClusterIdentity string,
-	secrets map[string]*corev1.Secret,
+	k8sCoreInformers kubecorev1informers.Interface,
 	imageVector imagevector.ImageVector,
 	k8sGardenCoreInformers v1beta1.Interface,
 	clientMap clientmap.ClientMap,
@@ -92,7 +93,7 @@ var defaultNewOperationFunc = func(
 	config *config.GardenletConfiguration,
 	gardenerInfo *gardencorev1beta1.Gardener,
 	gardenClusterIdentity string,
-	secrets map[string]*corev1.Secret,
+	k8sCoreInformers kubecorev1informers.Interface,
 	imageVector imagevector.ImageVector,
 	k8sGardenCoreInformers v1beta1.Interface,
 	clientMap clientmap.ClientMap,
@@ -105,7 +106,7 @@ var defaultNewOperationFunc = func(
 		WithConfig(config).
 		WithGardenerInfo(gardenerInfo).
 		WithGardenClusterIdentity(gardenClusterIdentity).
-		WithSecrets(secrets).
+		WithSecretsFrom(k8sCoreInformers.Secrets().Lister(), k8sGardenCoreInformers.Seeds().Lister(), *shoot.Spec.SeedName).
 		WithImageVector(imageVector).
 		WithGardenFrom(k8sGardenCoreInformers, shoot.Namespace).
 		WithSeedFrom(k8sGardenCoreInformers, *shoot.Spec.SeedName).

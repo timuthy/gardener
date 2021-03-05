@@ -76,14 +76,14 @@ func NewGardenControllerFactory(clientMap clientmap.ClientMap, gardenCoreInforme
 }
 
 var (
-	noControlPlaneSecrets = utils.MustNewRequirement(
+	noControlPlaneSecretsReq = utils.MustNewRequirement(
 		v1beta1constants.GardenRole,
 		selection.NotIn,
 		v1beta1constants.ControlPlaneSecretRoles...,
 	)
 
 	// uncontrolledSecretSelector is a selector for objects which are managed by operators/users and not created Gardener controllers.
-	uncontrolledSecretSelector = client.MatchingLabelsSelector{Selector: labels.NewSelector().Add(noControlPlaneSecrets)}
+	uncontrolledSecretSelector = client.MatchingLabelsSelector{Selector: labels.NewSelector().Add(noControlPlaneSecretsReq)}
 )
 
 // Run starts all the controllers for the Garden API group. It also performs bootstrapping tasks.
@@ -122,7 +122,7 @@ func (f *GardenControllerFactory) Run(ctx context.Context) error {
 		configMapInformer   = f.k8sInformers.Core().V1().ConfigMaps().Informer()
 		csrInformer         = f.k8sInformers.Certificates().V1beta1().CertificateSigningRequests().Informer()
 		namespaceInformer   = f.k8sInformers.Core().V1().Namespaces().Informer()
-		secretInformer      = f.k8sInformers.Core().V1().Secrets().Informer()
+		secretInformer      = f.k8sInformers.Core().V1().Secrets()
 		roleBindingInformer = f.k8sInformers.Rbac().V1().RoleBindings().Informer()
 		leaseInformer       = f.k8sInformers.Coordination().V1().Leases().Informer()
 	)
@@ -133,14 +133,11 @@ func (f *GardenControllerFactory) Run(ctx context.Context) error {
 	}
 
 	f.k8sInformers.Start(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), configMapInformer.HasSynced, csrInformer.HasSynced, namespaceInformer.HasSynced, secretInformer.HasSynced, roleBindingInformer.HasSynced, leaseInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), configMapInformer.HasSynced, csrInformer.HasSynced, namespaceInformer.HasSynced, secretInformer.Informer().HasSynced, roleBindingInformer.HasSynced, leaseInformer.HasSynced) {
 		return errors.New("Timed out waiting for Kube caches to sync")
 	}
 
-	secrets, err := garden.ReadGardenSecrets(f.k8sInformers, f.k8sGardenCoreInformers)
-	runtime.Must(err)
-
-	runtime.Must(garden.BootstrapCluster(ctx, k8sGardenClient, v1beta1constants.GardenNamespace, secrets))
+	runtime.Must(garden.BootstrapCluster(ctx, k8sGardenClient, v1beta1constants.GardenNamespace, secretInformer.Lister()))
 	logger.Logger.Info("Successfully bootstrapped the Garden cluster.")
 
 	// Initialize the workqueue metrics collection.
@@ -148,7 +145,7 @@ func (f *GardenControllerFactory) Run(ctx context.Context) error {
 
 	var (
 		cloudProfileController           = cloudprofilecontroller.NewCloudProfileController(f.clientMap, f.k8sGardenCoreInformers, f.recorder)
-		controllerRegistrationController = controllerregistrationcontroller.NewController(f.clientMap, f.k8sGardenCoreInformers, secrets)
+		controllerRegistrationController = controllerregistrationcontroller.NewController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers)
 		csrController                    = csrcontroller.NewCSRController(f.clientMap, f.k8sInformers, f.recorder)
 		quotaController                  = quotacontroller.NewQuotaController(f.clientMap, f.k8sGardenCoreInformers, f.recorder)
 		plantController                  = plantcontroller.NewController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.cfg, f.recorder)

@@ -19,6 +19,8 @@ import (
 	"errors"
 	"time"
 
+	kubecorev1informers "k8s.io/client-go/informers/core/v1"
+
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	seedmanagementv1alpha1 "github.com/gardener/gardener/pkg/apis/seedmanagement/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/core/clientset/versioned/fake"
@@ -46,7 +48,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -641,7 +642,7 @@ func opFunc(op *operation.Operation, err error) NewOperationFunc {
 		_ *config.GardenletConfiguration,
 		_ *gardencorev1beta1.Gardener,
 		_ string,
-		_ map[string]*corev1.Secret,
+		_ kubecorev1informers.Interface,
 		_ imagevector.ImageVector,
 		_ v1beta1.Interface,
 		_ clientmap.ClientMap,

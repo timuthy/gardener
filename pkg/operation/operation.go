@@ -26,6 +26,7 @@ import (
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardencoreinformers "github.com/gardener/gardener/pkg/client/core/informers/externalversions/core/v1beta1"
+	gardencorelisters "github.com/gardener/gardener/pkg/client/core/listers/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap/keys"
@@ -45,6 +46,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -138,6 +140,15 @@ func (b *Builder) WithLogger(logger *logrus.Entry) *Builder {
 // WithSecrets sets the secretsFunc attribute at the Builder.
 func (b *Builder) WithSecrets(secrets map[string]*corev1.Secret) *Builder {
 	b.secretsFunc = func() (map[string]*corev1.Secret, error) { return secrets, nil }
+	return b
+}
+
+// WithSecretsFrom sets the secretFunc attribute at the Builder which will get secrets via the given `secretLister`
+// from the namespace belonging to the given seed.
+func (b *Builder) WithSecretsFrom(secretLister corev1listers.SecretLister, seedLister gardencorelisters.SeedLister, seedName string) *Builder {
+	b.secretsFunc = func() (map[string]*corev1.Secret, error) {
+		return garden.ReadGardenSecrets(secretLister, seedLister, seed.ComputeGardenNamespace(seedName))
+	}
 	return b
 }
 

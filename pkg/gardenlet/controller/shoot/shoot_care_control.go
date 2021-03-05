@@ -39,8 +39,8 @@ import (
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kubecorev1informers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -141,11 +141,11 @@ type CareControlInterface interface {
 // NewDefaultCareControl returns a new instance of the default implementation CareControlInterface that
 // implements the documented semantics for caring for Shoots. You should use an instance returned from NewDefaultCareControl()
 // for any scenario other than testing.
-func NewDefaultCareControl(clientMap clientmap.ClientMap, k8sGardenCoreInformers gardencoreinformers.Interface, secrets map[string]*corev1.Secret, imageVector imagevector.ImageVector, identity *gardencorev1beta1.Gardener, gardenClusterIdentity string, config *config.GardenletConfiguration) CareControlInterface {
+func NewDefaultCareControl(clientMap clientmap.ClientMap, k8sGardenCoreInformers gardencoreinformers.Interface, k8sCoreInformers kubecorev1informers.Interface, imageVector imagevector.ImageVector, identity *gardencorev1beta1.Gardener, gardenClusterIdentity string, config *config.GardenletConfiguration) CareControlInterface {
 	return &defaultCareControl{
 		clientMap,
 		k8sGardenCoreInformers,
-		secrets,
+		k8sCoreInformers,
 		imageVector,
 		identity,
 		gardenClusterIdentity,
@@ -167,7 +167,7 @@ var (
 type defaultCareControl struct {
 	clientMap              clientmap.ClientMap
 	k8sGardenCoreInformers gardencoreinformers.Interface
-	secrets                map[string]*corev1.Secret
+	k8sCoreInformers       kubecorev1informers.Interface
 	imageVector            imagevector.ImageVector
 	identity               *gardencorev1beta1.Gardener
 	gardenClusterIdentity  string
@@ -283,7 +283,7 @@ func (c *defaultCareControl) Care(shootObj *gardencorev1beta1.Shoot, key string)
 		c.config,
 		c.identity,
 		c.gardenClusterIdentity,
-		c.secrets,
+		c.k8sCoreInformers,
 		c.imageVector,
 		c.k8sGardenCoreInformers,
 		c.clientMap,

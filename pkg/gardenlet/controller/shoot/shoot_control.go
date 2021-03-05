@@ -244,11 +244,16 @@ func (c *Controller) initializeOperation(ctx context.Context, logger *logrus.Ent
 		return nil, fmt.Errorf("failed to get garden client: %w", err)
 	}
 
+	gardenSecrets, err := garden.ReadGardenSecrets(c.secretLister, c.seedLister, seedpkg.ComputeGardenNamespace(seed.Name))
+	if err != nil {
+		return nil, err
+	}
+
 	gardenObj, err := garden.
 		NewBuilder().
 		WithProject(project).
-		WithInternalDomainFromSecrets(c.secrets).
-		WithDefaultDomainsFromSecrets(c.secrets).
+		WithInternalDomainFromSecrets(gardenSecrets).
+		WithDefaultDomainsFromSecrets(gardenSecrets).
 		Build()
 	if err != nil {
 		return nil, err
@@ -282,7 +287,7 @@ func (c *Controller) initializeOperation(ctx context.Context, logger *logrus.Ent
 		WithConfig(c.config).
 		WithGardenerInfo(c.identity).
 		WithGardenClusterIdentity(c.gardenClusterIdentity).
-		WithSecrets(c.secrets).
+		WithSecrets(gardenSecrets).
 		WithImageVector(c.imageVector).
 		WithGarden(gardenObj).
 		WithSeed(seedObj).
