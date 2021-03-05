@@ -19,15 +19,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
+	seedpkg "github.com/gardener/gardener/pkg/operation/seed"
+
+	kubecorev1informers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gardencoreinformers "github.com/gardener/gardener/pkg/client/core/informers/externalversions"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap/keys"
+	"github.com/gardener/gardener/pkg/client/kubernetes/informers"
 	gardenmetrics "github.com/gardener/gardener/pkg/controllerutils/metrics"
 	"github.com/gardener/gardener/pkg/gardenlet"
 	"github.com/gardener/gardener/pkg/gardenlet/apis/config"
+	confighelper "github.com/gardener/gardener/pkg/gardenlet/apis/config/helper"
 	backupbucketcontroller "github.com/gardener/gardener/pkg/gardenlet/controller/backupbucket"
 	backupentrycontroller "github.com/gardener/gardener/pkg/gardenlet/controller/backupentry"
 	controllerinstallationcontroller "github.com/gardener/gardener/pkg/gardenlet/controller/controllerinstallation"
@@ -92,6 +100,18 @@ func NewGardenletControllerFactory(
 
 // Run starts all the controllers for the Garden API group. It also performs bootstrapping tasks.
 func (f *GardenletControllerFactory) Run(ctx context.Context) error {
+	// create separate informer for configuration secrets
+	var namespaceAwareInformer *informers.NamespaceAwareIndexInformer
+	f.k8sInformers.InformerFor(&corev1.Secret{}, func(client kubernetes.Interface, sync time.Duration) cache.SharedIndexInformer {
+		namespaceAwareInformer = informers.NewNamespaceAwareInformer(
+			client,
+			5*time.Second,
+			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+			kubecorev1informers.NewFilteredSecretInformer,
+		)
+		return namespaceAwareInformer
+	})
+
 	var (
 		// Garden core informers
 		backupBucketInformer           = f.k8sGardenCoreInformers.Core().V1beta1().BackupBuckets().Informer()
@@ -101,7 +121,9 @@ func (f *GardenletControllerFactory) Run(ctx context.Context) error {
 		controllerInstallationInformer = f.k8sGardenCoreInformers.Core().V1beta1().ControllerInstallations().Informer()
 		projectInformer                = f.k8sGardenCoreInformers.Core().V1beta1().Projects().Informer()
 		secretBindingInformer          = f.k8sGardenCoreInformers.Core().V1beta1().SecretBindings().Informer()
-		seedInformer                   = f.k8sGardenCoreInformers.Core().V1beta1().Seeds().Informer()
+		seeds                          = f.k8sGardenCoreInformers.Core().V1beta1().Seeds()
+		seedInformer                   = seeds.Informer()
+		seedLister                     = seeds.Lister()
 		shootInformer                  = f.k8sGardenCoreInformers.Core().V1beta1().Shoots().Informer()
 		// Kubernetes core informers
 		namespaceInformer = f.k8sInformers.Core().V1().Namespaces().Informer()
@@ -123,15 +145,31 @@ func (f *GardenletControllerFactory) Run(ctx context.Context) error {
 		return fmt.Errorf("timed out waiting for Garden core caches to sync")
 	}
 
+	seedObjs, err := seedLister.List(labels.Everything())
+	if err != nil {
+		return fmt.Errorf("error while getting seeds %v", err)
+	}
+
+	for _, seedObj := range seedObjs {
+		namespaceAwareInformer.Add(ctx, seedpkg.ComputeGardenNamespace(seedObj.Name))
+	}
+
 	f.k8sInformers.Start(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), namespaceInformer.HasSynced, secretInformer.HasSynced, configMapInformer.HasSynced) {
 		return fmt.Errorf("timed out waiting for Kube caches to sync")
 	}
 
+	seedNames := confighelper.SeedNames(f.cfg.SeedConfig, seedLister, f.cfg.SeedSelector)
+	if len(seedNames) < 1 {
+		return fmt.Errorf("no seed selected by Gardenlet")
+	}
+
+	// Read secrets from any of the seed namespaces.
+	// No particular one is required in this case since all affected secrets are synchronized across namespaces.
 	secrets, err := garden.ReadGardenSecrets(
 		f.k8sInformers.Core().V1().Secrets().Lister(),
-		f.k8sGardenCoreInformers.Core().V1beta1().Seeds().Lister(),
-		v1beta1constants.GardenNamespace,
+		seeds.Lister(),
+		seedpkg.ComputeGardenNamespace(seedNames[0]),
 	)
 	runtime.Must(err)
 
@@ -159,7 +197,7 @@ func (f *GardenletControllerFactory) Run(ctx context.Context) error {
 
 	var (
 		controllerInstallationController = controllerinstallationcontroller.NewController(f.clientMap, f.k8sGardenCoreInformers, f.cfg, f.recorder, gardenNamespace, f.gardenClusterIdentity)
-		seedController                   = seedcontroller.NewSeedController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.healthManager, secrets, imageVector, componentImageVectors, f.identity, f.cfg, f.recorder)
+		seedController                   = seedcontroller.NewSeedController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.healthManager, imageVector, componentImageVectors, f.identity, f.cfg, f.recorder)
 		shootController                  = shootcontroller.NewShootController(f.clientMap, f.k8sGardenCoreInformers, f.k8sInformers, f.cfg, f.identity, f.gardenClusterIdentity, imageVector, f.recorder)
 	)
 

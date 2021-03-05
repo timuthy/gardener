@@ -28,10 +28,12 @@ import (
 	gardencorelisters "github.com/gardener/gardener/pkg/client/core/listers/core/v1beta1"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap"
 	"github.com/gardener/gardener/pkg/client/kubernetes/clientmap/keys"
+	"github.com/gardener/gardener/pkg/client/kubernetes/informers"
 	"github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/gardener/gardener/pkg/gardenlet/apis/config"
 	"github.com/gardener/gardener/pkg/logger"
 	"github.com/gardener/gardener/pkg/operation/common"
+	gardenpkg "github.com/gardener/gardener/pkg/operation/garden"
 	seedpkg "github.com/gardener/gardener/pkg/operation/seed"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -42,7 +44,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	kubecorev1listers "k8s.io/client-go/listers/core/v1"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -126,25 +128,23 @@ type ControlInterface interface {
 func NewDefaultControl(
 	clientMap clientmap.ClientMap,
 	k8sGardenCoreInformers gardencoreinformers.SharedInformerFactory,
-	secrets map[string]*corev1.Secret,
+	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	imageVector imagevector.ImageVector,
 	componentImageVectors imagevector.ComponentImageVectors,
 	identity *gardencorev1beta1.Gardener,
 	recorder record.EventRecorder,
 	config *config.GardenletConfiguration,
-	secretLister kubecorev1listers.SecretLister,
 	shootLister gardencorelisters.ShootLister,
 ) ControlInterface {
 	return &defaultControl{
 		clientMap,
 		k8sGardenCoreInformers,
-		secrets,
+		kubeInformerFactory,
 		imageVector,
 		componentImageVectors,
 		identity,
 		recorder,
 		config,
-		secretLister,
 		shootLister,
 	}
 }
@@ -152,13 +152,12 @@ func NewDefaultControl(
 type defaultControl struct {
 	clientMap              clientmap.ClientMap
 	k8sGardenCoreInformers gardencoreinformers.SharedInformerFactory
-	secrets                map[string]*corev1.Secret
+	kubeInformerFactory    kubeinformers.SharedInformerFactory
 	imageVector            imagevector.ImageVector
 	componentImageVectors  imagevector.ComponentImageVectors
 	identity               *gardencorev1beta1.Gardener
 	recorder               record.EventRecorder
 	config                 *config.GardenletConfiguration
-	secretLister           kubecorev1listers.SecretLister
 	shootLister            gardencorelisters.ShootLister
 }
 
@@ -175,6 +174,14 @@ func (c *defaultControl) ReconcileSeed(obj *gardencorev1beta1.Seed, key string) 
 	if err != nil {
 		return fmt.Errorf("failed to get garden client: %w", err)
 	}
+
+	// Initialize secret informer
+	secretInformer := c.kubeInformerFactory.Core().V1().Secrets()
+	secretIndexInformer, ok := c.kubeInformerFactory.Core().V1().Secrets().Informer().(*informers.NamespaceAwareIndexInformer)
+	if !ok {
+		return fmt.Errorf("unexpect informer type, cannot continue")
+	}
+	secretIndexInformer.Add(ctx, seedpkg.ComputeGardenNamespace(obj.Name))
 
 	// Initialize capacity and allocatable
 	var capacity, allocatable corev1.ResourceList
@@ -286,6 +293,9 @@ func (c *defaultControl) ReconcileSeed(obj *gardencorev1beta1.Seed, key string) 
 				return fmt.Errorf("failed to invalidate seed client: %w", err)
 			}
 
+			// Remove secret informer
+			secretIndexInformer.Remove(obj.Name)
+
 			return nil
 		}
 
@@ -349,8 +359,13 @@ func (c *defaultControl) ReconcileSeed(obj *gardencorev1beta1.Seed, key string) 
 		return err
 	}
 
+	secrets, err := gardenpkg.ReadGardenSecrets(secretInformer.Lister(), c.k8sGardenCoreInformers.Core().V1beta1().Seeds().Lister(), seedpkg.ComputeGardenNamespace(seed.Name))
+	if err != nil {
+		return err
+	}
+
 	// Bootstrap the Seed cluster.
-	if err := seedpkg.BootstrapCluster(ctx, gardenClient, seedClient, seedObj, c.secrets, c.imageVector, c.componentImageVectors, c.config.DeepCopy()); err != nil {
+	if err := seedpkg.BootstrapCluster(ctx, gardenClient, seedClient, seedObj, secrets, c.imageVector, c.componentImageVectors, c.config.DeepCopy()); err != nil {
 		conditionSeedBootstrapped = gardencorev1beta1helper.UpdatedCondition(conditionSeedBootstrapped, gardencorev1beta1.ConditionFalse, "BootstrappingFailed", err.Error())
 		_ = c.updateSeedStatus(ctx, gardenClient.Client(), seed, seedKubernetesVersion, capacity, allocatable, conditionSeedBootstrapped)
 		seedLogger.Errorf("Seed bootstrapping failed: %+v", err)

@@ -17,8 +17,11 @@ package helper
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	gardencore "github.com/gardener/gardener/pkg/apis/core"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	gardencorelisters "github.com/gardener/gardener/pkg/client/core/listers/core/v1beta1"
 	"github.com/gardener/gardener/pkg/gardenlet/apis/config"
 	configv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 
@@ -26,6 +29,30 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
+
+// SeedNames returns all seed names matching the given config or LabelSelector if no config is given.
+func SeedNames(seedConfig *config.SeedConfig, seedLister gardencorelisters.SeedLister, labelSelector *metav1.LabelSelector) []string {
+	if name := SeedNameFromSeedConfig(seedConfig); name != "" {
+		return []string{name}
+	}
+
+	var names []string
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil || selector == labels.Nothing() {
+		return names
+	}
+
+	seeds, err := seedLister.List(selector)
+	if err != nil {
+		return names
+	}
+
+	for _, seed := range seeds {
+		names = append(names, seed.Name)
+	}
+
+	return names
+}
 
 // SeedNameFromSeedConfig returns an empty string if the given seed config is nil, or the
 // name inside the seed config.

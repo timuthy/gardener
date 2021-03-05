@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -86,7 +85,6 @@ func NewSeedController(
 	gardenCoreInformerFactory gardencoreinformers.SharedInformerFactory,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	healthManager healthz.Manager,
-	secrets map[string]*corev1.Secret,
 	imageVector imagevector.ImageVector,
 	componentImageVectors imagevector.ComponentImageVectors,
 	identity *gardencorev1beta1.Gardener,
@@ -95,13 +93,11 @@ func NewSeedController(
 ) *Controller {
 	var (
 		gardenCoreV1beta1Informer = gardenCoreInformerFactory.Core().V1beta1()
-		corev1Informer            = kubeInformerFactory.Core().V1()
 
 		controllerInstallationInformer = gardenCoreV1beta1Informer.ControllerInstallations()
 		seedInformer                   = gardenCoreV1beta1Informer.Seeds()
 
 		controllerInstallationLister = controllerInstallationInformer.Lister()
-		secretLister                 = corev1Informer.Secrets().Lister()
 		seedLister                   = seedInformer.Lister()
 		shootLister                  = gardenCoreV1beta1Informer.Shoots().Lister()
 	)
@@ -112,7 +108,7 @@ func NewSeedController(
 		config:                  config,
 		healthManager:           healthManager,
 		recorder:                recorder,
-		control:                 NewDefaultControl(clientMap, gardenCoreInformerFactory, secrets, imageVector, componentImageVectors, identity, recorder, config, secretLister, shootLister),
+		control:                 NewDefaultControl(clientMap, gardenCoreInformerFactory, kubeInformerFactory, imageVector, componentImageVectors, identity, recorder, config, shootLister),
 		extensionCheckControl:   NewDefaultExtensionCheckControl(clientMap, controllerInstallationLister, metav1.Now),
 		seedLeaseControl:        lease.NewLeaseController(time.Now, clientMap, LeaseResyncSeconds, gardencorev1beta1.GardenerSeedLeaseNamespace),
 		seedLister:              seedLister,
