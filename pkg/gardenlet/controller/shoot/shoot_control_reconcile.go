@@ -51,6 +51,25 @@ func (c *Controller) runReconcileShootFlow(ctx context.Context, o *operation.Ope
 		}
 	}
 
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				status := o.Shoot.Info.Status
+				if len(status.UID) == 0 {
+					fmt.Printf("%+v\n", status)
+					panic("status.UID is empty")
+				}
+				if len(o.Shoot.Info.Status.TechnicalID) == 0 {
+					fmt.Printf("%+v\n", status)
+					panic("o.Shoot.Info.Status.TechnicalID")
+				}
+			}
+		}
+	}()
+
 	errorContext := errors.NewErrorContext("Shoot cluster reconciliation", tasksWithErrors)
 
 	err = errors.HandleErrors(errorContext,
@@ -549,5 +568,10 @@ func removeTaskAnnotation(ctx context.Context, o *operation.Operation, generatio
 
 	oldObj := o.Shoot.Info.DeepCopy()
 	controllerutils.RemoveTasks(o.Shoot.Info.Annotations, tasksToRemove...)
-	return o.K8sGardenClient.Client().Patch(ctx, o.Shoot.Info, client.MergeFrom(oldObj))
+	shootCp := o.Shoot.Info
+	if err := o.K8sGardenClient.Client().Patch(ctx, shootCp, client.MergeFrom(oldObj)); err != nil {
+		return err
+	}
+	o.Shoot.Info = shootCp
+	return nil
 }
