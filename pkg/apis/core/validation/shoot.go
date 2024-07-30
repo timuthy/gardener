@@ -1718,6 +1718,61 @@ func ValidateWorker(worker core.Worker, kubernetes core.Kubernetes, fldPath *fie
 		allErrs = append(allErrs, ValidateClusterAutoscalerOptions(worker.ClusterAutoscaler, fldPath.Child("autoscaler"))...)
 	}
 
+	if worker.MemoryConfiguration != nil {
+		allErrs = append(allErrs, ValidateWorkerMemoryConfiguration(worker.MemoryConfiguration, fldPath.Child("memoryConfiguration"))...)
+	}
+
+	return allErrs
+}
+
+var (
+	availableHugePageSizeQuantities sets.Set[resource.Quantity]
+	availableHugePageSizes          = []string{
+		"2Mi",
+		"1Gi",
+	}
+)
+
+func init() {
+	availableHugePageSizeQuantities = sets.New[resource.Quantity]()
+	for _, pageSize := range availableHugePageSizes {
+		availableHugePageSizeQuantities.Insert(resource.MustParse(pageSize))
+	}
+}
+
+// ValidateWorkerMemoryConfiguration validates the worker memory configuration.
+func ValidateWorkerMemoryConfiguration(memoryConfiguration *core.WorkerMemoryConfiguration, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	allErrs = append(allErrs, ValidateHugePageConfiguration(memoryConfiguration.HugePages, fldPath.Child("hugePages"))...)
+
+	return allErrs
+}
+
+// ValidateHugePageConfiguration validates the huge page configuration.
+func ValidateHugePageConfiguration(hugePages []core.HugePageConfiguration, fldPath *field.Path) field.ErrorList {
+	var (
+		allErrs             = field.ErrorList{}
+		configuredHugePages = sets.New[resource.Quantity]()
+	)
+
+	for i, hugePageConfig := range hugePages {
+		pageSizeFld := fldPath.Index(i).Child("pageSize")
+
+		if !availableHugePageSizeQuantities.Has(hugePageConfig.PageSize) {
+			allErrs = append(allErrs, field.NotSupported(pageSizeFld, hugePageConfig.PageSize, availableHugePageSizes))
+		}
+
+		if configuredHugePages.Has(hugePageConfig.PageSize) {
+			allErrs = append(allErrs, field.Duplicate(pageSizeFld, hugePageConfig.PageSize))
+		}
+		configuredHugePages.Insert(hugePageConfig.PageSize)
+
+		if hugePageConfig.Quantity.Cmp(hugePageConfig.PageSize) < 0 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i).Child("quantity"), hugePageConfig.Quantity, "must be >= configured page size"))
+		}
+	}
+
 	return allErrs
 }
 

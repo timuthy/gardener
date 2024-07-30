@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -84,6 +85,24 @@ type OperatingSystemConfigSpec struct {
 	// +patchStrategy=merge
 	// +optional
 	Files []File `json:"files,omitempty" patchStrategy:"merge" patchMergeKey:"path"`
+	// MemoryConfiguration is the memory configuration of the operating system.
+	// +optional
+	MemoryConfiguration *MemoryConfiguration `json:"memoryConfiguration,omitempty"`
+}
+
+// MemoryConfiguration contains memory configuration values for the operating system.
+type MemoryConfiguration struct {
+	// HugePages is the configuration for huge pages.
+	// +optional
+	HugePages []HugePageConfiguration `json:"hugePages,omitempty"`
+}
+
+// HugePageConfiguration contains configuration value for huge page.
+type HugePageConfiguration struct {
+	// PageSize is the size of a single huge page. Supported sizes are `2Mi` and `1Gi`.
+	PageSize resource.Quantity `json:"pageSize"`
+	// Quantity is the size of the requested huge pages.
+	Quantity resource.Quantity `json:"quantity"`
 }
 
 // Unit is a unit for the operating system configuration (usually, a systemd unit).

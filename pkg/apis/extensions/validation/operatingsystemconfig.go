@@ -68,6 +68,30 @@ func ValidateOperatingSystemConfigSpec(spec *extensionsv1alpha1.OperatingSystemC
 	allErrs = append(allErrs, ValidateCRIConfig(spec.CRIConfig, spec.Purpose, fldPath.Child("criConfig"))...)
 	allErrs = append(allErrs, ValidateUnits(spec.Units, pathsFromFiles, fldPath.Child("units"))...)
 	allErrs = append(allErrs, ValidateFiles(spec.Files, fldPath.Child("files"))...)
+	allErrs = append(allErrs, ValidateMemoryConfiguration(spec.MemoryConfiguration, spec.Purpose, fldPath.Child("memoryConfiguration"))...)
+
+	return allErrs
+}
+
+// ValidateMemoryConfiguration validates the memory configuration.
+func ValidateMemoryConfiguration(memoryConfiguration *extensionsv1alpha1.MemoryConfiguration, purpose extensionsv1alpha1.OperatingSystemConfigPurpose, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if memoryConfiguration == nil {
+		return allErrs
+	}
+
+	allErrs = append(allErrs, validateHugePageConfiguration(memoryConfiguration.HugePages, purpose, fldPath.Child("hugePages"))...)
+
+	return allErrs
+}
+
+func validateHugePageConfiguration(hugePages []extensionsv1alpha1.HugePageConfiguration, purpose extensionsv1alpha1.OperatingSystemConfigPurpose, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(hugePages) > 0 && purpose == extensionsv1alpha1.OperatingSystemConfigPurposeProvision {
+		allErrs = append(allErrs, field.Forbidden(fldPath, "huge pages config is not allowed for OperatingSystemConfig with purpose 'provision'"))
+	}
 
 	return allErrs
 }
@@ -321,6 +345,25 @@ func ValidateOperatingSystemConfigSpecUpdate(new, old *extensionsv1alpha1.Operat
 
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(new.Type, old.Type, fldPath.Child("type"))...)
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(new.Purpose, old.Purpose, fldPath.Child("purpose"))...)
+	allErrs = append(allErrs, validateMemoryConfigurationUpdate(new.MemoryConfiguration, old.MemoryConfiguration, fldPath.Child("memoryConfiguration"))...)
+
+	return allErrs
+}
+
+func validateMemoryConfigurationUpdate(new, old *extensionsv1alpha1.MemoryConfiguration, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	var (
+		newHugePages, oldHugePages []extensionsv1alpha1.HugePageConfiguration
+	)
+	if new != nil {
+		newHugePages = new.HugePages
+	}
+	if old != nil {
+		oldHugePages = old.HugePages
+	}
+
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newHugePages, oldHugePages, fldPath.Child("hugePages"))...)
 
 	return allErrs
 }

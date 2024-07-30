@@ -455,6 +455,29 @@ var _ = Describe("OperatingSystemConfig validation tests", func() {
 			}))))
 		})
 
+		It("should forbid huge page configuration for provisioning OSC", func() {
+			oscCopy := osc.DeepCopy()
+			oscCopy.Spec.Purpose = extensionsv1alpha1.OperatingSystemConfigPurposeProvision
+			oscCopy.Spec.CRIConfig = nil
+			oscCopy.Spec.MemoryConfiguration = &extensionsv1alpha1.MemoryConfiguration{
+				HugePages: []extensionsv1alpha1.HugePageConfiguration{{}},
+			}
+
+			Expect(ValidateOperatingSystemConfig(oscCopy)).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+				"Type":  Equal(field.ErrorTypeForbidden),
+				"Field": Equal("spec.memoryConfiguration.hugePages"),
+			}))))
+		})
+
+		It("should allow setting huge page configuration for reconcile OSC", func() {
+			oscCopy := osc.DeepCopy()
+			oscCopy.Spec.MemoryConfiguration = &extensionsv1alpha1.MemoryConfiguration{
+				HugePages: []extensionsv1alpha1.HugePageConfiguration{{}},
+			}
+
+			Expect(ValidateOperatingSystemConfig(oscCopy)).To(BeEmpty())
+		})
+
 		It("should allow valid osc resources", func() {
 			errorList := ValidateOperatingSystemConfig(osc)
 
@@ -499,6 +522,23 @@ var _ = Describe("OperatingSystemConfig validation tests", func() {
 					"Type":   Equal(field.ErrorTypeForbidden),
 					"Field":  Equal("spec.criConfig.containerd"),
 					"Detail": Equal(`containerd config is not allowed for OperatingSystemConfig with purpose 'provision'`),
+				})),
+			))
+		})
+
+		It("should prevent updating huge page configuration", func() {
+			newOperatingSystemConfig := prepareOperatingSystemConfigForUpdate(osc)
+			newOperatingSystemConfig.Spec.MemoryConfiguration = &extensionsv1alpha1.MemoryConfiguration{
+				HugePages: []extensionsv1alpha1.HugePageConfiguration{{}},
+			}
+
+			errorList := ValidateOperatingSystemConfigUpdate(newOperatingSystemConfig, osc)
+
+			Expect(errorList).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("spec.memoryConfiguration.hugePages"),
+					"Detail": Equal("field is immutable"),
 				})),
 			))
 		})

@@ -958,6 +958,17 @@ func (d *deployer) deploy(ctx context.Context, operation string) (extensionsv1al
 			}
 		}
 
+		var memoryConfiguration *extensionsv1alpha1.MemoryConfiguration
+		if workerMemoryConfig := d.worker.MemoryConfiguration; workerMemoryConfig != nil {
+			memoryConfiguration = &extensionsv1alpha1.MemoryConfiguration{
+				HugePages: make([]extensionsv1alpha1.HugePageConfiguration, 0, len(workerMemoryConfig.HugePages)),
+			}
+			for _, hugePage := range workerMemoryConfig.HugePages {
+				memoryConfiguration.HugePages = append(memoryConfiguration.HugePages, extensionsv1alpha1.HugePageConfiguration{PageSize: hugePage.PageSize, Quantity: hugePage.Quantity})
+			}
+		}
+		d.osc.Spec.MemoryConfiguration = memoryConfiguration
+
 		return nil
 	})
 	return d.osc, err

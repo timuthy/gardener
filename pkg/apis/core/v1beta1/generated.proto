@@ -1021,6 +1021,15 @@ message HorizontalPodAutoscalerConfig {
   optional double tolerance = 6;
 }
 
+// HugePageConfiguration contains configuration value for huge page.
+message HugePageConfiguration {
+  // PageSize is the size of a single huge page. Supported sizes are `2Mi` and `1Gi`.
+  optional k8s.io.apimachinery.pkg.api.resource.Quantity pageSize = 1;
+
+  // Quantity is the size of the requested huge pages.
+  optional k8s.io.apimachinery.pkg.api.resource.Quantity quantity = 2;
+}
+
 // Ingress configures the Ingress specific settings of the cluster
 message Ingress {
   // Domain specifies the IngressDomain of the cluster pointing to the ingress controller endpoint. It will be used
@@ -3306,6 +3315,10 @@ message Worker {
   // ClusterAutoscaler contains the cluster autoscaler configurations for the worker pool.
   // +optional
   optional ClusterAutoscalerOptions clusterAutoscaler = 21;
+
+  // MemoryConfiguration is the memory configuration for each node in this worker pool.
+  // +optional
+  optional WorkerMemoryConfiguration memoryConfiguration = 22;
 }
 
 // WorkerKubernetes contains configuration for Kubernetes components related to this worker pool.
@@ -3321,6 +3334,15 @@ message WorkerKubernetes {
   // Only one minor version difference to other worker groups and global kubernetes version is allowed.
   // +optional
   optional string version = 2;
+}
+
+// WorkerMemoryConfiguration contains memory configuration values for a worker.
+message WorkerMemoryConfiguration {
+  // HugePages is the configuration for huge pages on the worker.
+  // +patchMergeKey=pageSize
+  // +patchStrategy=merge
+  // +optional
+  repeated HugePageConfiguration hugePages = 1;
 }
 
 // WorkerSystemComponents contains configuration for system components related to this worker pool

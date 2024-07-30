@@ -1479,6 +1479,26 @@ type Worker struct {
 	// ClusterAutoscaler contains the cluster autoscaler configurations for the worker pool.
 	// +optional
 	ClusterAutoscaler *ClusterAutoscalerOptions `json:"clusterAutoscaler,omitempty" protobuf:"bytes,21,opt,name=clusterAutoscaler"`
+	// MemoryConfiguration is the memory configuration for each node in this worker pool.
+	// +optional
+	MemoryConfiguration *WorkerMemoryConfiguration `json:"memoryConfiguration,omitempty" protobuf:"bytes,22,opt,name=memoryConfiguration"`
+}
+
+// WorkerMemoryConfiguration contains memory configuration values for a worker.
+type WorkerMemoryConfiguration struct {
+	// HugePages is the configuration for huge pages on the worker.
+	// +patchMergeKey=pageSize
+	// +patchStrategy=merge
+	// +optional
+	HugePages []HugePageConfiguration `json:"hugePages,omitempty" patchStrategy:"merge" patchMergeKey:"pageSize" protobuf:"bytes,1,opt,name=hugePages"`
+}
+
+// HugePageConfiguration contains configuration value for huge page.
+type HugePageConfiguration struct {
+	// PageSize is the size of a single huge page. Supported sizes are `2Mi` and `1Gi`.
+	PageSize resource.Quantity `json:"pageSize" protobuf:"bytes,1,opt,name=pageSize"`
+	// Quantity is the size of the requested huge pages.
+	Quantity resource.Quantity `json:"quantity" protobuf:"bytes,2,opt,name=quantity"`
 }
 
 // ClusterAutoscalerOptions contains the cluster autoscaler configurations for a worker pool.

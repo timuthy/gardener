@@ -98,6 +98,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.HibernationSchedule":                        schema_pkg_apis_core_v1beta1_HibernationSchedule(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.HighAvailability":                           schema_pkg_apis_core_v1beta1_HighAvailability(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.HorizontalPodAutoscalerConfig":              schema_pkg_apis_core_v1beta1_HorizontalPodAutoscalerConfig(ref),
+		"github.com/gardener/gardener/pkg/apis/core/v1beta1.HugePageConfiguration":                      schema_pkg_apis_core_v1beta1_HugePageConfiguration(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.Ingress":                                    schema_pkg_apis_core_v1beta1_Ingress(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.IngressController":                          schema_pkg_apis_core_v1beta1_IngressController(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.InternalSecret":                             schema_pkg_apis_core_v1beta1_InternalSecret(ref),
@@ -210,6 +211,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.WatchCacheSizes":                            schema_pkg_apis_core_v1beta1_WatchCacheSizes(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.Worker":                                     schema_pkg_apis_core_v1beta1_Worker(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerKubernetes":                           schema_pkg_apis_core_v1beta1_WorkerKubernetes(ref),
+		"github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerMemoryConfiguration":                  schema_pkg_apis_core_v1beta1_WorkerMemoryConfiguration(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerSystemComponents":                     schema_pkg_apis_core_v1beta1_WorkerSystemComponents(ref),
 		"github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkersSettings":                            schema_pkg_apis_core_v1beta1_WorkersSettings(ref),
 		"github.com/gardener/gardener/pkg/apis/operations/v1alpha1.Bastion":                             schema_pkg_apis_operations_v1alpha1_Bastion(ref),
@@ -3787,6 +3789,34 @@ func schema_pkg_apis_core_v1beta1_HorizontalPodAutoscalerConfig(ref common.Refer
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+	}
+}
+
+func schema_pkg_apis_core_v1beta1_HugePageConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HugePageConfiguration contains configuration value for huge page.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"pageSize": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PageSize is the size of a single huge page. Supported sizes are `2Mi` and `1Gi`.",
+							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+					"quantity": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Quantity is the size of the requested huge pages.",
+							Ref:         ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+				},
+				Required: []string{"pageSize", "quantity"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
@@ -9537,12 +9567,18 @@ func schema_pkg_apis_core_v1beta1_Worker(ref common.ReferenceCallback) common.Op
 							Ref:         ref("github.com/gardener/gardener/pkg/apis/core/v1beta1.ClusterAutoscalerOptions"),
 						},
 					},
+					"memoryConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MemoryConfiguration is the memory configuration for each node in this worker pool.",
+							Ref:         ref("github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerMemoryConfiguration"),
+						},
+					},
 				},
 				Required: []string{"name", "machine", "maximum", "minimum"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/gardener/gardener/pkg/apis/core/v1beta1.CRI", "github.com/gardener/gardener/pkg/apis/core/v1beta1.ClusterAutoscalerOptions", "github.com/gardener/gardener/pkg/apis/core/v1beta1.DataVolume", "github.com/gardener/gardener/pkg/apis/core/v1beta1.Machine", "github.com/gardener/gardener/pkg/apis/core/v1beta1.MachineControllerManagerSettings", "github.com/gardener/gardener/pkg/apis/core/v1beta1.Volume", "github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerKubernetes", "github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerSystemComponents", "k8s.io/api/core/v1.Taint", "k8s.io/apimachinery/pkg/runtime.RawExtension", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/gardener/gardener/pkg/apis/core/v1beta1.CRI", "github.com/gardener/gardener/pkg/apis/core/v1beta1.ClusterAutoscalerOptions", "github.com/gardener/gardener/pkg/apis/core/v1beta1.DataVolume", "github.com/gardener/gardener/pkg/apis/core/v1beta1.Machine", "github.com/gardener/gardener/pkg/apis/core/v1beta1.MachineControllerManagerSettings", "github.com/gardener/gardener/pkg/apis/core/v1beta1.Volume", "github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerKubernetes", "github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerMemoryConfiguration", "github.com/gardener/gardener/pkg/apis/core/v1beta1.WorkerSystemComponents", "k8s.io/api/core/v1.Taint", "k8s.io/apimachinery/pkg/runtime.RawExtension", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -9571,6 +9607,41 @@ func schema_pkg_apis_core_v1beta1_WorkerKubernetes(ref common.ReferenceCallback)
 		},
 		Dependencies: []string{
 			"github.com/gardener/gardener/pkg/apis/core/v1beta1.KubeletConfig"},
+	}
+}
+
+func schema_pkg_apis_core_v1beta1_WorkerMemoryConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkerMemoryConfiguration contains memory configuration values for a worker.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"hugePages": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "pageSize",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "HugePages is the configuration for huge pages on the worker.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/gardener/gardener/pkg/apis/core/v1beta1.HugePageConfiguration"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/gardener/gardener/pkg/apis/core/v1beta1.HugePageConfiguration"},
 	}
 }
 

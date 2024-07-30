@@ -1455,6 +1455,20 @@ This field is immutable.</p>
 <p>Files is a list of files that should get written to the host&rsquo;s file system.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>memoryConfiguration</code></br>
+<em>
+<a href="#extensions.gardener.cloud/v1alpha1.MemoryConfiguration">
+MemoryConfiguration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>MemoryConfiguration is the memory configuration of the operating system.</p>
+</td>
+</tr>
 </table>
 </td>
 </tr>
@@ -3334,6 +3348,47 @@ string
 </tr>
 </tbody>
 </table>
+<h3 id="extensions.gardener.cloud/v1alpha1.HugePageConfiguration">HugePageConfiguration
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#extensions.gardener.cloud/v1alpha1.MemoryConfiguration">MemoryConfiguration</a>)
+</p>
+<p>
+<p>HugePageConfiguration contains configuration value for huge page.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>pageSize</code></br>
+<em>
+k8s.io/apimachinery/pkg/api/resource.Quantity
+</em>
+</td>
+<td>
+<p>PageSize is the size of a single huge page. Supported sizes are <code>2Mi</code> and <code>1Gi</code>.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>quantity</code></br>
+<em>
+k8s.io/apimachinery/pkg/api/resource.Quantity
+</em>
+</td>
+<td>
+<p>Quantity is the size of the requested huge pages.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="extensions.gardener.cloud/v1alpha1.IPFamily">IPFamily
 (<code>string</code> alias)</p></h3>
 <p>
@@ -3640,6 +3695,39 @@ string
 </tr>
 </tbody>
 </table>
+<h3 id="extensions.gardener.cloud/v1alpha1.MemoryConfiguration">MemoryConfiguration
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#extensions.gardener.cloud/v1alpha1.OperatingSystemConfigSpec">OperatingSystemConfigSpec</a>)
+</p>
+<p>
+<p>MemoryConfiguration contains memory configuration values for the operating system.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>hugePages</code></br>
+<em>
+<a href="#extensions.gardener.cloud/v1alpha1.HugePageConfiguration">
+[]HugePageConfiguration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HugePages is the configuration for huge pages.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="extensions.gardener.cloud/v1alpha1.NetworkSpec">NetworkSpec
 </h3>
 <p>
@@ -3882,6 +3970,20 @@ This field is immutable.</p>
 <td>
 <em>(Optional)</em>
 <p>Files is a list of files that should get written to the host&rsquo;s file system.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>memoryConfiguration</code></br>
+<em>
+<a href="#extensions.gardener.cloud/v1alpha1.MemoryConfiguration">
+MemoryConfiguration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>MemoryConfiguration is the memory configuration of the operating system.</p>
 </td>
 </tr>
 </tbody>

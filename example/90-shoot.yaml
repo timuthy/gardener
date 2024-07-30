@@ -52,6 +52,10 @@ spec:
     #   scaleDownUnneededTime: 30m
     #   scaleDownUnreadyTime: 1h
     #   maxNodeProvisionTime: 15m
+    # memoryManagement:
+    #   hugePages:
+    #   - pageSize: 2Mi
+    #     quantity: 200Mi
       volume:
         type: gp2
         size: 20Gi

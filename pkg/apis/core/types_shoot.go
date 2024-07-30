@@ -1142,6 +1142,22 @@ type Worker struct {
 	Sysctls map[string]string
 	// ClusterAutoscaler contains the cluster autoscaler configurations for the worker pool.
 	ClusterAutoscaler *ClusterAutoscalerOptions
+	// MemoryConfiguration is the memory configuration for each node in this worker pool.
+	MemoryConfiguration *WorkerMemoryConfiguration
+}
+
+// WorkerMemoryConfiguration contains memory configuration values for a worker.
+type WorkerMemoryConfiguration struct {
+	// HugePages is the configuration for huge pages on the worker.
+	HugePages []HugePageConfiguration
+}
+
+// HugePageConfiguration contains configuration value for huge page.
+type HugePageConfiguration struct {
+	// PageSize is the size of a single huge page. Supported sizes are `2Mi` and `1Gi`.
+	PageSize resource.Quantity
+	// Quantity is the size of the requested huge pages.
+	Quantity resource.Quantity
 }
 
 // ClusterAutoscalerOptions contains the cluster autoscaler configurations for a worker pool.

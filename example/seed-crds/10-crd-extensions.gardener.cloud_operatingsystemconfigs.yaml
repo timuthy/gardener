@@ -223,6 +223,38 @@ spec:
                   - path
                   type: object
                 type: array
+              memoryConfiguration:
+                description: MemoryConfiguration is the memory configuration of the
+                  operating system.
+                properties:
+                  hugePages:
+                    description: HugePages is the configuration for huge pages.
+                    items:
+                      description: HugePageConfiguration contains configuration value
+                        for huge page.
+                      properties:
+                        pageSize:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: PageSize is the size of a single huge page.
+                            Supported sizes are `2Mi` and `1Gi`.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        quantity:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: Quantity is the size of the requested huge
+                            pages.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                      required:
+                      - pageSize
+                      - quantity
+                      type: object
+                    type: array
+                type: object
               providerConfig:
                 description: ProviderConfig is the provider specific configuration.
                 type: object

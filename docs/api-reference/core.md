@@ -5436,6 +5436,51 @@ float64
 </tr>
 </tbody>
 </table>
+<h3 id="core.gardener.cloud/v1beta1.HugePageConfiguration">HugePageConfiguration
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#core.gardener.cloud/v1beta1.WorkerMemoryConfiguration">WorkerMemoryConfiguration</a>)
+</p>
+<p>
+<p>HugePageConfiguration contains configuration value for huge page.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>pageSize</code></br>
+<em>
+<a href="https://godoc.org/k8s.io/apimachinery/pkg/api/resource#Quantity">
+k8s.io/apimachinery/pkg/api/resource.Quantity
+</a>
+</em>
+</td>
+<td>
+<p>PageSize is the size of a single huge page. Supported sizes are <code>2Mi</code> and <code>1Gi</code>.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>quantity</code></br>
+<em>
+<a href="https://godoc.org/k8s.io/apimachinery/pkg/api/resource#Quantity">
+k8s.io/apimachinery/pkg/api/resource.Quantity
+</a>
+</em>
+</td>
+<td>
+<p>Quantity is the size of the requested huge pages.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="core.gardener.cloud/v1beta1.IPFamily">IPFamily
 (<code>string</code> alias)</p></h3>
 <p>
@@ -13267,6 +13312,20 @@ ClusterAutoscalerOptions
 <p>ClusterAutoscaler contains the cluster autoscaler configurations for the worker pool.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>memoryConfiguration</code></br>
+<em>
+<a href="#core.gardener.cloud/v1beta1.WorkerMemoryConfiguration">
+WorkerMemoryConfiguration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>MemoryConfiguration is the memory configuration for each node in this worker pool.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="core.gardener.cloud/v1beta1.WorkerKubernetes">WorkerKubernetes
@@ -13314,6 +13373,39 @@ string
 If not specified the kubelet version is derived from the global shoot cluster kubernetes version.
 version must be equal or lower than the version of the shoot kubernetes version.
 Only one minor version difference to other worker groups and global kubernetes version is allowed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="core.gardener.cloud/v1beta1.WorkerMemoryConfiguration">WorkerMemoryConfiguration
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#core.gardener.cloud/v1beta1.Worker">Worker</a>)
+</p>
+<p>
+<p>WorkerMemoryConfiguration contains memory configuration values for a worker.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>hugePages</code></br>
+<em>
+<a href="#core.gardener.cloud/v1beta1.HugePageConfiguration">
+[]HugePageConfiguration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HugePages is the configuration for huge pages on the worker.</p>
 </td>
 </tr>
 </tbody>

@@ -66,6 +66,11 @@ var _ = Describe("Shoot Validation Tests", func() {
 				MaxSurge:         &maxSurge,
 				MaxUnavailable:   &maxUnavailable,
 				SystemComponents: systemComponents,
+				MemoryConfiguration: &core.WorkerMemoryConfiguration{
+					HugePages: []core.HugePageConfiguration{
+						{PageSize: resource.MustParse("2Mi"), Quantity: resource.MustParse("10Mi")},
+					},
+				},
 			}
 			invalidWorker = core.Worker{
 				Name: "",
@@ -78,6 +83,11 @@ var _ = Describe("Shoot Validation Tests", func() {
 				MaxSurge:         &maxSurge,
 				MaxUnavailable:   &maxUnavailable,
 				SystemComponents: systemComponents,
+				MemoryConfiguration: &core.WorkerMemoryConfiguration{
+					HugePages: []core.HugePageConfiguration{
+						{PageSize: resource.MustParse("8Mi"), Quantity: resource.MustParse("10Mi")},
+					},
+				},
 			}
 			invalidWorkerName = core.Worker{
 				Name: "not_compliant",
@@ -1283,6 +1293,10 @@ var _ = Describe("Shoot Validation Tests", func() {
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":  Equal(field.ErrorTypeForbidden),
 						"Field": Equal("spec.provider.workers[0].maximum"),
+					})),
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":  Equal(field.ErrorTypeNotSupported),
+						"Field": Equal("spec.provider.workers[0].memoryConfiguration.hugePages[0].pageSize"),
 					})),
 				))
 			})
@@ -6801,6 +6815,65 @@ var _ = Describe("Shoot Validation Tests", func() {
 					"Type":   Equal(field.ErrorTypeForbidden),
 					"Field":  Equal("metadata.finalizers[2]"),
 					"Detail": ContainSubstring("finalizer %q cannot be added on creation", "gardener"),
+				})),
+			))
+		})
+	})
+
+	Describe("#ValidateWorkerMemoryConfiguration", func() {
+		var (
+			fldPath      *field.Path
+			memoryConfig *core.WorkerMemoryConfiguration
+		)
+
+		BeforeEach(func() {
+			fldPath = field.NewPath("memoryConfiguration")
+
+			memoryConfig = &core.WorkerMemoryConfiguration{
+				HugePages: []core.HugePageConfiguration{
+					{PageSize: resource.MustParse("2Mi"), Quantity: resource.MustParse("200Mi")},
+					{PageSize: resource.MustParse("1Gi"), Quantity: resource.MustParse("8Gi")},
+				},
+			}
+		})
+
+		It("should not return an error because configuration is valid", func() {
+			Expect(ValidateWorkerMemoryConfiguration(memoryConfig, fldPath)).To(BeEmpty())
+		})
+
+		It("should return an error because page size is not supported", func() {
+			memoryConfig.HugePages = []core.HugePageConfiguration{
+				{PageSize: resource.MustParse("1Mi"), Quantity: resource.MustParse("1Mi")},
+			}
+
+			Expect(ValidateWorkerMemoryConfiguration(memoryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeNotSupported),
+					"Field":  Equal("memoryConfiguration.hugePages[0].pageSize"),
+					"Detail": Equal(`supported values: "2Mi", "1Gi"`),
+				})),
+			))
+		})
+
+		It("should return an error because page size is configured multiple times", func() {
+			memoryConfig.HugePages = append(memoryConfig.HugePages, memoryConfig.HugePages[0])
+
+			Expect(ValidateWorkerMemoryConfiguration(memoryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeDuplicate),
+					"Field": Equal("memoryConfiguration.hugePages[2].pageSize"),
+				})),
+			))
+		})
+
+		It("should return an error because quantity is too low", func() {
+			memoryConfig.HugePages[1].Quantity = resource.MustParse("1G")
+
+			Expect(ValidateWorkerMemoryConfiguration(memoryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("memoryConfiguration.hugePages[1].quantity"),
+					"Detail": ContainSubstring("must be >= configured page size"),
 				})),
 			))
 		})
