@@ -150,6 +150,7 @@ func (r *Reconciler) reconcileAdmissionVirtualClusterResources(ctx context.Conte
 	}
 
 	gardenerValues := map[string]any{
+		// TODO(timuthy): These values need to be documented.
 		"virtualGarden": map[string]any{
 			"user": map[string]any{
 				"name": fmt.Sprintf("system:serviceaccount:kube-system:%s", r.getVirtualClusterAccessSecret(extension).ServiceAccountName),
