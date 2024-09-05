@@ -30,6 +30,7 @@ import (
 	"github.com/gardener/gardener/pkg/operator/apis/config"
 	"github.com/gardener/gardener/pkg/operator/controller/extension/admission"
 	"github.com/gardener/gardener/pkg/operator/controller/extension/controllerregistration"
+	"github.com/gardener/gardener/pkg/operator/controller/extension/runtime"
 	"github.com/gardener/gardener/pkg/utils/oci"
 )
 
@@ -62,6 +63,7 @@ type Reconciler struct {
 
 	admission              admission.Interface
 	controllerRegistration controllerregistration.Interface
+	runtime                runtime.Interface
 }
 
 // Reconcile performs the main reconciliation logic.
@@ -182,6 +184,11 @@ func (r *Reconciler) delete(ctx context.Context, log logr.Logger, virtualCluster
 	conditions := NewConditions(r.Clock, extension.Status)
 
 	if err := r.controllerRegistration.Delete(deleteCtx, log, virtualClusterClient, extension); err != nil {
+		conditions.installed = v1beta1helper.UpdatedConditionWithClock(r.Clock, conditions.installed, gardencorev1beta1.ConditionFalse, ConditionDeleteFailed, err.Error())
+		return errors.Join(err, r.updateExtensionStatus(ctx, log, extension, conditions))
+	}
+
+	if err := r.admission.Delete(deleteCtx, log, extension); err != nil {
 		conditions.installed = v1beta1helper.UpdatedConditionWithClock(r.Clock, conditions.installed, gardencorev1beta1.ConditionFalse, ConditionDeleteFailed, err.Error())
 		return errors.Join(err, r.updateExtensionStatus(ctx, log, extension, conditions))
 	}
