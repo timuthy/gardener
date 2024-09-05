@@ -32,9 +32,10 @@ func NewRegistry() *Registry {
 
 // Pull implements oci.Interface
 func (r *Registry) Pull(_ context.Context, oci *gardencorev1.OCIRepository) ([]byte, error) {
-	data, ok := r.artifacts[artifactKey(oci)]
+	ref := artifactKey(oci)
+	data, ok := r.artifacts[ref]
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("artifact %s not found", ref)
 	}
 	return data, nil
 }
