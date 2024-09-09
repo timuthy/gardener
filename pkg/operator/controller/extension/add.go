@@ -88,6 +88,7 @@ func (r *Reconciler) AddToManager(ctx context.Context, mgr manager.Manager, gard
 			builder.WithPredicates(predicate.Or(
 				predicateutils.ForEventTypes(predicateutils.Create),
 				predicateutils.ForEventTypes(predicateutils.Delete),
+				predicateutils.IsDeleting(),
 				operatorpredicate.GardenCreatedOrReconciledSuccessfully(),
 			)),
 		).
