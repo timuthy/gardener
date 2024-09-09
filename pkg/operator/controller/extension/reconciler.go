@@ -98,13 +98,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 	}
 
 	var (
-		deployRuntimeOnly bool
-		garden            = &gardenList.Items[0]
+		garden           = &gardenList.Items[0]
+		gardenReconciled = gardenReconciledSuccessfully(garden)
 	)
 	// check Garden's last operation status. If the last operation is a successful reconciliation, we can proceed to install the extensions to the virtual garden cluster.
 	switch lastOperation := garden.Status.LastOperation; {
-	case lastOperation == nil || (lastOperation.Type == gardencorev1beta1.LastOperationTypeReconcile && lastOperation.State != gardencorev1beta1.LastOperationStateSucceeded):
-		deployRuntimeOnly = true
 	case lastOperation.Type == gardencorev1beta1.LastOperationTypeDelete:
 		// If the last operation is a delete, then do nothing. Once the Garden resource is deleted, we will reconcile and remove the finalizers from the Extension.
 		// TODO(timuthy): Drop this handling and implement a proper removal procedure when the garden is deleted. Planned for release v1.103 or v1.104.
@@ -112,7 +110,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 	}
 
 	var virtualClusterClientSet kubernetes.Interface
-	if !deployRuntimeOnly {
+	if !gardenReconciled {
 		var err error
 		virtualClusterClientSet, err = r.GardenClientMap.GetClient(ctx, keys.ForGarden(garden))
 		if err != nil {
@@ -129,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 		return reconcile.Result{}, fmt.Errorf("error retrieving generic kubeconfig secret name from %q annotation of Garden", v1beta1constants.AnnotationKeyGenericTokenKubeconfigSecretName)
 	}
 
-	return r.reconcile(ctx, log, deployRuntimeOnly, virtualClusterClientSet, genericTokenKubeconfigSecretName, extension)
+	return r.reconcile(ctx, log, gardenReconciled, virtualClusterClientSet, genericTokenKubeconfigSecretName, extension)
 }
 
 func (r *Reconciler) updateExtensionStatus(ctx context.Context, log logr.Logger, extension *operatorv1alpha1.Extension, updatedConditions Conditions) error {
@@ -162,7 +160,7 @@ func (r *Reconciler) updateExtensionStatus(ctx context.Context, log logr.Logger,
 func (r *Reconciler) reconcile(
 	ctx context.Context,
 	log logr.Logger,
-	deployRuntimeOnly bool,
+	gardenReconciled bool,
 	virtualClusterClientSet kubernetes.Interface,
 	genericTokenKubeconfigSecretName string,
 	extension *operatorv1alpha1.Extension,
@@ -186,7 +184,7 @@ func (r *Reconciler) reconcile(
 		return reconcile.Result{}, errors.Join(err, r.updateExtensionStatus(ctx, log, extension, conditions))
 	}
 
-	if deployRuntimeOnly {
+	if !gardenReconciled {
 		conditions.installed = v1beta1helper.UpdatedConditionWithClock(r.Clock, conditions.installed, gardencorev1beta1.ConditionProgressing, ConditionReconcileProgressing, fmt.Sprintf("Extension %q deployment is progressing while garden is being set up", extension.Name))
 		log.Info("Garden is not yet in 'Reconcile Succeeded' state, requeueing", "requeueAfter", requeueGardenResourceNotReady)
 		return reconcile.Result{RequeueAfter: requeueGardenResourceNotReady}, r.updateExtensionStatus(ctx, log, extension, conditions)
@@ -268,4 +266,8 @@ func NewConditions(clock clock.Clock, status operatorv1alpha1.ExtensionStatus) C
 	return Conditions{
 		installed: v1beta1helper.GetOrInitConditionWithClock(clock, status.Conditions, operatorv1alpha1.ExtensionInstalled),
 	}
+}
+
+func gardenReconciledSuccessfully(garden *operatorv1alpha1.Garden) bool {
+	return garden.Status.LastOperation == nil || (garden.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeReconcile && garden.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded)
 }
