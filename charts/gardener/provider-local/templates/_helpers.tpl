@@ -1,5 +1,9 @@
 {{- define "name" -}}
+{{- if .Values.gardener.runtimeCluster.enabled -}}
+gardener-extension-provider-local-runtime
+{{- else -}}
 gardener-extension-provider-local
+{{- end }}
 {{- end -}}
 
 {{- define "labels.app.key" -}}

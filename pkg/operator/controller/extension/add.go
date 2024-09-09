@@ -85,7 +85,11 @@ func (r *Reconciler) AddToManager(ctx context.Context, mgr manager.Manager, gard
 		Watches(
 			&operatorv1alpha1.Garden{},
 			mapper.EnqueueRequestsFrom(ctx, mgr.GetCache(), mapper.MapFunc(r.MapToAllExtensions), mapper.UpdateWithNew, mgr.GetLogger()),
-			builder.WithPredicates(predicate.Or(operatorpredicate.GardenCreatedOrReconciledSuccessfully(), predicateutils.ForEventTypes(predicateutils.Delete))),
+			builder.WithPredicates(predicate.Or(
+				predicateutils.ForEventTypes(predicateutils.Create),
+				predicateutils.ForEventTypes(predicateutils.Delete),
+				operatorpredicate.GardenCreatedOrReconciledSuccessfully(),
+			)),
 		).
 		Complete(r)
 }

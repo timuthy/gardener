@@ -10,8 +10,13 @@ spec:
       helm:
         ociRepository:
           ref: local-skaffold/gardener-extension-provider-local/charts/extension:v0.0.0
+      runtimeClusterValues:
+        coredns:
+          enabled: false
+        logLevel: debug
       values:
         logLevel: debug
+        priorityClassName: gardener-system-900
     admission:
       runtimeCluster:
         helm:

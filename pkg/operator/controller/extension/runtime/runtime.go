@@ -72,7 +72,7 @@ func (d *deployment) createOrUpdateResources(ctx context.Context, extension *ope
 	gardenerValues := map[string]any{
 		"gardener": map[string]any{
 			"runtimeCluster": map[string]any{
-				// TODO(timuthy): Add values here
+				"enabled": "true",
 			},
 		},
 	}

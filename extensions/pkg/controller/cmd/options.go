@@ -33,12 +33,16 @@ const (
 	LeaderElectionIDFlag = "leader-election-id"
 	// LeaderElectionNamespaceFlag is the name of the command line flag to specify the leader election namespace.
 	LeaderElectionNamespaceFlag = "leader-election-namespace"
+
+	// WebhookServerDisabledFlag is the name of the command line flag to disable the webhook server.
+	WebhookServerDisabledFlag = "webhook-server-disabled"
 	// WebhookServerHostFlag is the name of the command line flag to specify the webhook config host for 'url' mode.
 	WebhookServerHostFlag = "webhook-config-server-host"
 	// WebhookServerPortFlag is the name of the command line flag to specify the webhook server port.
 	WebhookServerPortFlag = "webhook-config-server-port"
 	// WebhookCertDirFlag is the name of the command line flag to specify the webhook certificate directory.
 	WebhookCertDirFlag = "webhook-config-cert-dir"
+
 	// MetricsBindAddressFlag is the name of the command line flag to specify the TCP address that the controller
 	// should bind to for serving prometheus metrics.
 	// It can be set to "0" to disable the metrics serving.
@@ -167,6 +171,8 @@ type ManagerOptions struct {
 	LeaderElectionID string
 	// LeaderElectionNamespace is the namespace to do leader election in.
 	LeaderElectionNamespace string
+	// WebhookServerDisabled disables the webhook server if set to 'true'.
+	WebhookServerDisabled bool
 	// WebhookServerHost is the host for the webhook server.
 	WebhookServerHost string
 	// WebhookServerPort is the port for the webhook server.
@@ -190,6 +196,7 @@ func (m *ManagerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&m.LeaderElection, LeaderElectionFlag, m.LeaderElection, "Whether to use leader election or not when running this controller manager.")
 	fs.StringVar(&m.LeaderElectionID, LeaderElectionIDFlag, m.LeaderElectionID, "The leader election id to use.")
 	fs.StringVar(&m.LeaderElectionNamespace, LeaderElectionNamespaceFlag, m.LeaderElectionNamespace, "The namespace to do leader election in.")
+	fs.BoolVar(&m.WebhookServerDisabled, WebhookServerDisabledFlag, false, "Disabled the webhook server.")
 	fs.StringVar(&m.WebhookServerHost, WebhookServerHostFlag, m.WebhookServerHost, "The webhook server host.")
 	fs.IntVar(&m.WebhookServerPort, WebhookServerPortFlag, m.WebhookServerPort, "The webhook server port.")
 	fs.StringVar(&m.WebhookCertDir, WebhookCertDirFlag, m.WebhookCertDir, "The directory that contains the webhook server key and certificate.")
@@ -218,6 +225,7 @@ func (m *ManagerOptions) Complete() error {
 		m.LeaderElection,
 		m.LeaderElectionID,
 		m.LeaderElectionNamespace,
+		m.WebhookServerDisabled,
 		m.WebhookServerHost,
 		m.WebhookServerPort,
 		m.WebhookCertDir,
@@ -240,6 +248,8 @@ type ManagerConfig struct {
 	LeaderElectionID string
 	// LeaderElectionNamespace is the namespace to do leader election in.
 	LeaderElectionNamespace string
+	// WebhookServerDisabled disables the webhook server if set to 'true'.
+	WebhookServerDisabled bool
 	// WebhookServerHost is the host for the webhook server.
 	WebhookServerHost string
 	// WebhookServerPort is the port for the webhook server.
@@ -264,11 +274,13 @@ func (c *ManagerConfig) Apply(opts *manager.Options) {
 	opts.HealthProbeBindAddress = c.HealthBindAddress
 	opts.Logger = c.Logger
 	opts.Controller = controllerconfig.Controller{RecoverPanic: ptr.To(true)}
-	opts.WebhookServer = webhook.NewServer(webhook.Options{
-		Host:    c.WebhookServerHost,
-		Port:    c.WebhookServerPort,
-		CertDir: c.WebhookCertDir,
-	})
+	if !c.WebhookServerDisabled {
+		opts.WebhookServer = webhook.NewServer(webhook.Options{
+			Host:    c.WebhookServerHost,
+			Port:    c.WebhookServerPort,
+			CertDir: c.WebhookCertDir,
+		})
+	}
 }
 
 // Options initializes empty manager.Options, applies the set values and returns it.
