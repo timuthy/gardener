@@ -5,6 +5,8 @@
 package controllerregistrar
 
 import (
+	"context"
+
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -17,15 +19,18 @@ import (
 const ControllerName = "controller-registrar"
 
 // AddToManager adds Reconciler to the given manager.
-func (r *Reconciler) AddToManager(mgr manager.Manager) error {
+func (r *Reconciler) AddToManager(ctx context.Context, mgr manager.Manager) error {
+	var controllersCtx context.Context
+	controllersCtx, r.controllersCancel = context.WithCancel(ctx)
+
 	if r.Manager == nil {
-		r.Manager = mgr
+		r.Manager = &cancelableManager{ctx: controllersCtx, Manager: mgr}
 	}
 
 	return builder.
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
-		For(&operatorv1alpha1.Garden{}, builder.WithPredicates(predicateutils.ForEventTypes(predicateutils.Create))).
+		For(&operatorv1alpha1.Garden{}, builder.WithPredicates(predicateutils.ForEventTypes(predicateutils.Create, predicateutils.Delete))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
 		}).

@@ -107,7 +107,7 @@ func AddToManager(ctx context.Context, mgr manager.Manager, cfg *config.Operator
 				},
 			},
 		}, addVirtualClusterControllerToManager...),
-	}).AddToManager(mgr); err != nil {
+	}).AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("failed adding Registrar controller: %w", err)
 	}
 

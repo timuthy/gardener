@@ -77,6 +77,7 @@ func (r *Reconciler) AddToManager(ctx context.Context, mgr manager.Manager, runt
 				&handler.EnqueueRequestForObject{},
 				predicateutils.ForEventTypes(predicateutils.Create, predicateutils.Update)),
 		).
+		WithOptions(controller.Options{SkipNameValidation: ptr.To(true)}).
 		Build(r)
 	if err != nil {
 		return err
