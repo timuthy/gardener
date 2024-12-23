@@ -1,0 +1,28 @@
+name: provider-local
+type: local
+annotations:
+  security.gardener.cloud/pod-security-enforce: privileged
+resources:
+- kind: BackupBucket
+- kind: BackupEntry
+- kind: DNSRecord
+- kind: ControlPlane
+- kind: Infrastructure
+- kind: OperatingSystemConfig
+- kind: Worker
+- kind: Extension
+# workerlessSupport: true
+admission:
+  runtimeCluster:
+    ociRepository:
+      repository: http://localhost:5001/local-skaffold_gardener-extension-admission-local_charts_runtime
+      tag: latest
+  virtualCluster:
+    ociRepository:
+      repository: http://localhost:5001/local-skaffold_gardener-extension-admission-local_charts_application
+      tag: latest
+extension:
+  ociRepository:
+    repository: http://localhost:5001/local-skaffold_gardener-extension-provider-local_charts_extension
+    tag: latest
+# policy: Always

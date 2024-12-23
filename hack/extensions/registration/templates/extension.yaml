@@ -1,0 +1,41 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: {{ .Values.name }}
+  {{- if .Values.annotations }}
+  annotations:
+{{ toYaml .Values.annotations | indent 4 }}
+  {{- end }}
+spec:
+  resources:
+  {{- range .Values.resources }}
+  - kind: {{ .kind }}
+    type: {{ $.Values.type }}
+    {{- if .workerlessSupport }}
+    workerlessSuppoer: {{ .workerlessSupport }}
+    {{- end }}
+  {{- end }}
+  deployment:
+    {{- if .Values.admission }}
+    admission:
+      values: {}
+      {{- if .Values.admission.runtimeCluster }}
+      runtimeCluster:
+        helm:
+          ociRepository:
+{{ toYaml .Values.admission.runtimeCluster.ociRepository | indent 12 }}
+      {{- end }}
+      {{- if .Values.admission.virtualCluster }}
+      virtualCluster:
+        helm:
+          ociRepository:
+{{ toYaml .Values.admission.virtualCluster.ociRepository | indent 12 }}
+      {{- end }}
+    {{- end }}
+    extension:
+      helm:
+        ociRepository:
+{{ toYaml .Values.extension.ociRepository | indent 10 }}
+      {{- if .Values.extension.policy }}
+      policy: {{ .Values.extension.policy }}
+      {{- end }}

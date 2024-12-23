@@ -1,30 +1,44 @@
+---
+# Source: kind/templates/extension.yaml
 apiVersion: operator.gardener.cloud/v1alpha1
 kind: Extension
 metadata:
   name: provider-local
-#spec:
-#  resources:
-#  - kind: BackupBucket
-#    type: local
-#    primary: true|false
-#    globallyEnabled: true|false # only valid if kind=Extension
-#    reconcileTimeout: 30s # only valid if kind=Extension
-#    lifecycle: {}
-#    workerlessSupported: true|false # only valid if kind=Extension
-#  deployment:
-#    admission:
-#      values: {}
-#      runtimeCluster:
-#        helm:
-#          ociRepository: {}
-#      virtualCluster:
-#        helm:
-#          ociRepository: {}
-#    extension:
-#      values: {}
-#      runtimeClusterValues: {}
-#      helm:
-#        ociRepository: {}
-#      policy: OnDemand|Always
-#      seedSelector: {}
-
+  annotations:
+    security.gardener.cloud/pod-security-enforce: privileged
+spec:
+  resources:
+  - kind: BackupBucket
+    type: local
+  - kind: BackupEntry
+    type: local
+  - kind: DNSRecord
+    type: local
+  - kind: ControlPlane
+    type: local
+  - kind: Infrastructure
+    type: local
+  - kind: OperatingSystemConfig
+    type: local
+  - kind: Worker
+    type: local
+  - kind: Extension
+    type: local
+  deployment:
+    admission:
+      values: {}
+      runtimeCluster:
+        helm:
+          ociRepository:
+            repository: http://localhost:5001/local-skaffold_gardener-extension-admission-local_charts_runtime
+            tag: latest
+      virtualCluster:
+        helm:
+          ociRepository:
+            repository: http://localhost:5001/local-skaffold_gardener-extension-admission-local_charts_application
+            tag: latest
+    extension:
+      helm:
+        ociRepository:
+          repository: http://localhost:5001/local-skaffold_gardener-extension-provider-local_charts_extension
+          tag: latest
