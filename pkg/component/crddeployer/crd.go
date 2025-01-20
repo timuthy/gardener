@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/exp/maps"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -67,7 +68,14 @@ func (c *crdDeployer) Destroy(ctx context.Context) error {
 			}
 
 			if c.confirmDeletion {
-				if err := gardenerutils.ConfirmDeletion(ctx, c.client, crd); client.IgnoreNotFound(err) != nil {
+				if err := c.client.Get(ctx, client.ObjectKeyFromObject(crd), crd); err != nil {
+					if apierrors.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+
+				if err := gardenerutils.ConfirmDeletion(ctx, c.client, crd); err != nil {
 					return err
 				}
 			}
