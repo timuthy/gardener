@@ -9,20 +9,18 @@ set -o pipefail
 function usage {
     cat <<EOM
 Usage:
-generate-kustomize-base-extension [options]
+generate-extension [options]
 
-This script generates a kustomization.yaml file for building an Extension (operator.gardener.cloud) manifest.
+This script generates a Extension (operator.gardener.cloud) manifest.
 
     -h, --help                              Display this help and exit.
     --name                                  Name is the name of the extension.
     --provider-type                         Type of the provider.
     --component-name                        Name of the Kustomize component, one of {provider-extension, network, containerruntime, extension}
-    --destination                           The path the kustomization.yaml is written to.
+    --destination                           The path the extension manifest is written to.
     --extension-oci-repository              URL to OCI image containing the extension chart.
     --admission-runtime-oci-repository      OPTIONAL: URL to OCI image containing the admission runtime chart.
     --admission-application-oci-repository  OPTIONAL: URL to OCI image containing the admission application chart.
-    --version                               OPTIONAL: Version of Gardener containing example files.
-    --resources-path                        OPTIONAL: Path to Gardener repository. Upstream https://github.com/gardener/gardener will be used if not defined.
 EOM
     exit 0
 }
@@ -53,10 +51,6 @@ for i in "$@"; do
         COMPONENT_NAME="${i#*=}"
         shift
         ;;
-    --resources-path=*)
-        RESOURCES_PATH="${i#*=}"
-        shift
-        ;;
     --admission-runtime-oci-repository=*)
         ADMISSION_RUNTIME_OCI_REPO="${i#*=}"
         shift
@@ -65,17 +59,13 @@ for i in "$@"; do
         ADMISSION_APP_OCI_REPO="${i#*=}"
         shift
         ;;
-    --version=*)
-        VERSION="${i#*=}"
-        shift
-        ;;
     esac
 done
 
 ( [[ -z "${NAME:-}" ]] || [[ -z "${PROVIDER_TYPE:-}" ]] || [[ -z "${OCI_REPO:-}" ]] || [[ -z "${DESTINATION:-}" ]] || [[ -z "${COMPONENT_NAME:-}" ]] ) && usage
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-COMPONENT_PATH="${SCRIPT_DIR}/../example/extensions/components/${COMPONENT_NAME}"
+COMPONENT_PATH="${SCRIPT_DIR}/../example/extensions/kustomize/components/${COMPONENT_NAME}"
 
 if [ ! -d "${COMPONENT_PATH}" ]; then
   echo "Unknown component name"
@@ -91,10 +81,10 @@ KUSTOMIZATION_YAML="apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- ${RESOURCES_PATH:="https://github.com/gardener/gardener/"}/example/extensions/base/${VERSION_REF:-""}
+- ../base
 
 components:
-- ${RESOURCES_PATH}/example/extensions/components/${COMPONENT_NAME}/${VERSION_REF:-""}
+- ../components/${COMPONENT_NAME}
 
 patches:
 - target:
@@ -107,20 +97,20 @@ patches:
       path: /metadata/name
       value: $NAME
     - op: replace
-      path: /spec/deployment/extension/helm/ociRepository
+      path: /spec/deployment/extension/helm/ociRepository/ref
       value: $OCI_REPO
 "
 
 # Add admission component.
 if [[ -n $ADMISSION_RUNTIME_OCI_REPO ]] && [[ -n $ADMISSION_APP_OCI_REPO ]]; then
-  KUSTOMIZATION_YAML=$(printf "$KUSTOMIZATION_YAML" | yq ".components += \"${RESOURCES_PATH}/example/extensions/components/admission/${VERSION_REF:-""}\"")
+  KUSTOMIZATION_YAML=$(printf "$KUSTOMIZATION_YAML" | yq ".components += \"../components/admission\"")
 
   KUSTOMIZATION_YAML=$(printf "$KUSTOMIZATION_YAML" | yq ".patches[0].patch +=\"
 - op: replace
-  path: /spec/deployment/admission/runtimeCluster/helm/ociRepository
+  path: /spec/deployment/admission/runtimeCluster/helm/ociRepository/ref
   value: ${ADMISSION_RUNTIME_OCI_REPO}
 - op: replace
-  path: /spec/deployment/admission/virtualCluster/helm/ociRepository
+  path: /spec/deployment/admission/virtualCluster/helm/ociRepository/ref
   value: ${ADMISSION_APP_OCI_REPO}
 \"")
 fi
@@ -136,5 +126,9 @@ for ((i = 0; i < $NUMBER_OF_RESOURCES; i++)); do
 \"")
 done
 
+generated_dir="${SCRIPT_DIR}/../example/extensions/kustomize/.generated-${NAME}"
+mkdir -p $generated_dir
+printf "$KUSTOMIZATION_YAML" > $generated_dir/kustomization.yaml
+
 # Write result to destination.
-printf "$KUSTOMIZATION_YAML" > $DESTINATION/kustomization.yaml
+kustomize build $generated_dir -o $DESTINATION
