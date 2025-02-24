@@ -18,12 +18,6 @@ patches:
     - op: add
       path: /spec/resources/-
       value: {
-        "kind": "OperatingSystemConfig",
-        "type": "local",
-      }
-    - op: add
-      path: /spec/resources/-
-      value: {
           "kind": "Extension",
           "lifecycle": {
             "delete": "AfterKubeAPIServer",

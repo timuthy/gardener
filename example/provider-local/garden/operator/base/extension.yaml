@@ -9,7 +9,6 @@ spec:
         helm:
           ociRepository:
             ref: local-skaffold/gardener-extension-admission-local/charts/runtime:v0.0.0
-      values: {}
       virtualCluster:
         helm:
           ociRepository:
@@ -18,8 +17,6 @@ spec:
       helm:
         ociRepository:
           ref: local-skaffold/gardener-extension-provider-local/charts/extension:v0.0.0
-      runtimeClusterValues: {}
-      values: {}
   resources:
   - kind: BackupBucket
     type: local
@@ -34,4 +31,6 @@ spec:
   - kind: Infrastructure
     type: local
   - kind: Worker
+    type: local
+  - kind: OperatingSystemConfig
     type: local
