@@ -6,7 +6,6 @@ package v1beta1
 
 import (
 	"encoding/json"
-	"strings"
 )
 
 const (
@@ -87,22 +86,19 @@ func (c *CapabilitiesSetCapabilities) UnmarshalJSON(data []byte) error {
 
 // UnmarshalJSON unmarshals the CapabilityValues object from JSON.
 func (c *CapabilityValues) UnmarshalJSON(bytes []byte) error {
-	var str string
-	if err := json.Unmarshal(bytes, &str); err != nil {
+	var values []string
+	if err := json.Unmarshal(bytes, &values); err != nil {
 		return err
 	}
-	rawValues := strings.Split(str, ",")
 
-	for _, value := range rawValues {
-		c.Values = append(c.Values, strings.TrimSpace(value))
-	}
+	c.Values = append(c.Values, values...)
 
 	return nil
 }
 
 // MarshalJSON marshals the CapabilityValues object to JSON.
 func (c CapabilityValues) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + strings.Join(c.Values, ",") + `"`), nil
+	return json.Marshal(c.Values)
 }
 
 // HasEntries checks if any Capability is defined.

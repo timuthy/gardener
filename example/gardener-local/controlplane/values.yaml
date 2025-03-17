@@ -158,6 +158,7 @@ global:
         maxSize: 0
         policy: ""
     featureGates:
+      CloudProfileCapabilities: true
       ShootForceDeletion: true
       CredentialsRotationWithoutWorkersRollout: true
     resources: {}
