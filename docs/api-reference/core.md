@@ -3409,9 +3409,9 @@ CRIName
 <a href="#core.gardener.cloud/v1beta1.MachineImageVersion">MachineImageVersion</a>)
 </p>
 <p>
-<p>CapabilitiesSetCapabilities is a wrapper for Capabilities
-this is a workaround as we cannot define a slice of maps in protobuf
-we define custom marshal/unmarshal functions to get around this l
+<p>CapabilitiesSetCapabilities is a wrapper for Capabilities.
+This is a workaround as we cannot define a slice of maps in protobuf.
+We define custom marshal/unmarshal functions to get around this limitation.
 If there is a way to avoid this, we should do it.</p>
 </p>
 <table>
@@ -3424,7 +3424,7 @@ If there is a way to avoid this, we should do it.</p>
 <tbody>
 <tr>
 <td>
-<code>-</code></br>
+<code>Capabilities</code></br>
 <em>
 <a href="#core.gardener.cloud/v1beta1.Capabilities">
 Capabilities

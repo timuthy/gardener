@@ -1956,11 +1956,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*core.Capabilities)(nil), (*Capabilities)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_core_Capabilities_To_v1beta1_Capabilities(a.(*core.Capabilities), b.(*Capabilities), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*core.ControllerDeployment)(nil), (*ControllerDeployment)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_core_ControllerDeployment_To_v1beta1_ControllerDeployment(a.(*core.ControllerDeployment), b.(*ControllerDeployment), scope)
 	}); err != nil {
@@ -1978,11 +1973,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*core.ProjectSpec)(nil), (*ProjectSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_core_ProjectSpec_To_v1beta1_ProjectSpec(a.(*core.ProjectSpec), b.(*ProjectSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*Capabilities)(nil), (*core.Capabilities)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_Capabilities_To_core_Capabilities(a.(*Capabilities), b.(*core.Capabilities), scope)
 	}); err != nil {
 		return err
 	}
@@ -2700,17 +2690,7 @@ func Convert_core_CloudProfile_To_v1beta1_CloudProfile(in *core.CloudProfile, ou
 
 func autoConvert_v1beta1_CloudProfileList_To_core_CloudProfileList(in *CloudProfileList, out *core.CloudProfileList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]core.CloudProfile, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_CloudProfile_To_core_CloudProfile(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]core.CloudProfile)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -2721,17 +2701,7 @@ func Convert_v1beta1_CloudProfileList_To_core_CloudProfileList(in *CloudProfileL
 
 func autoConvert_core_CloudProfileList_To_v1beta1_CloudProfileList(in *core.CloudProfileList, out *CloudProfileList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]CloudProfile, len(*in))
-		for i := range *in {
-			if err := Convert_core_CloudProfile_To_v1beta1_CloudProfile(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]CloudProfile)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -2767,28 +2737,8 @@ func autoConvert_v1beta1_CloudProfileSpec_To_core_CloudProfileSpec(in *CloudProf
 	if err := Convert_v1beta1_KubernetesSettings_To_core_KubernetesSettings(&in.Kubernetes, &out.Kubernetes, s); err != nil {
 		return err
 	}
-	if in.MachineImages != nil {
-		in, out := &in.MachineImages, &out.MachineImages
-		*out = make([]core.MachineImage, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_MachineImage_To_core_MachineImage(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineImages = nil
-	}
-	if in.MachineTypes != nil {
-		in, out := &in.MachineTypes, &out.MachineTypes
-		*out = make([]core.MachineType, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_MachineType_To_core_MachineType(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineTypes = nil
-	}
+	out.MachineImages = *(*[]core.MachineImage)(unsafe.Pointer(&in.MachineImages))
+	out.MachineTypes = *(*[]core.MachineType)(unsafe.Pointer(&in.MachineTypes))
 	out.ProviderConfig = (*runtime.RawExtension)(unsafe.Pointer(in.ProviderConfig))
 	out.Regions = *(*[]core.Region)(unsafe.Pointer(&in.Regions))
 	out.SeedSelector = (*core.SeedSelector)(unsafe.Pointer(in.SeedSelector))
@@ -2810,28 +2760,8 @@ func autoConvert_core_CloudProfileSpec_To_v1beta1_CloudProfileSpec(in *core.Clou
 	if err := Convert_core_KubernetesSettings_To_v1beta1_KubernetesSettings(&in.Kubernetes, &out.Kubernetes, s); err != nil {
 		return err
 	}
-	if in.MachineImages != nil {
-		in, out := &in.MachineImages, &out.MachineImages
-		*out = make([]MachineImage, len(*in))
-		for i := range *in {
-			if err := Convert_core_MachineImage_To_v1beta1_MachineImage(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineImages = nil
-	}
-	if in.MachineTypes != nil {
-		in, out := &in.MachineTypes, &out.MachineTypes
-		*out = make([]MachineType, len(*in))
-		for i := range *in {
-			if err := Convert_core_MachineType_To_v1beta1_MachineType(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineTypes = nil
-	}
+	out.MachineImages = *(*[]MachineImage)(unsafe.Pointer(&in.MachineImages))
+	out.MachineTypes = *(*[]MachineType)(unsafe.Pointer(&in.MachineTypes))
 	out.ProviderConfig = (*runtime.RawExtension)(unsafe.Pointer(in.ProviderConfig))
 	out.Regions = *(*[]Region)(unsafe.Pointer(&in.Regions))
 	out.SeedSelector = (*SeedSelector)(unsafe.Pointer(in.SeedSelector))
@@ -4777,17 +4707,7 @@ func Convert_core_MachineControllerManagerSettings_To_v1beta1_MachineControllerM
 
 func autoConvert_v1beta1_MachineImage_To_core_MachineImage(in *MachineImage, out *core.MachineImage, s conversion.Scope) error {
 	out.Name = in.Name
-	if in.Versions != nil {
-		in, out := &in.Versions, &out.Versions
-		*out = make([]core.MachineImageVersion, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_MachineImageVersion_To_core_MachineImageVersion(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Versions = nil
-	}
+	out.Versions = *(*[]core.MachineImageVersion)(unsafe.Pointer(&in.Versions))
 	out.UpdateStrategy = (*core.MachineImageUpdateStrategy)(unsafe.Pointer(in.UpdateStrategy))
 	return nil
 }
@@ -4799,17 +4719,7 @@ func Convert_v1beta1_MachineImage_To_core_MachineImage(in *MachineImage, out *co
 
 func autoConvert_core_MachineImage_To_v1beta1_MachineImage(in *core.MachineImage, out *MachineImage, s conversion.Scope) error {
 	out.Name = in.Name
-	if in.Versions != nil {
-		in, out := &in.Versions, &out.Versions
-		*out = make([]MachineImageVersion, len(*in))
-		for i := range *in {
-			if err := Convert_core_MachineImageVersion_To_v1beta1_MachineImageVersion(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Versions = nil
-	}
+	out.Versions = *(*[]MachineImageVersion)(unsafe.Pointer(&in.Versions))
 	out.UpdateStrategy = (*MachineImageUpdateStrategy)(unsafe.Pointer(in.UpdateStrategy))
 	return nil
 }
@@ -4827,17 +4737,7 @@ func autoConvert_v1beta1_MachineImageVersion_To_core_MachineImageVersion(in *Mac
 	out.Architectures = *(*[]string)(unsafe.Pointer(&in.Architectures))
 	out.KubeletVersionConstraint = (*string)(unsafe.Pointer(in.KubeletVersionConstraint))
 	out.InPlaceUpdates = (*core.InPlaceUpdates)(unsafe.Pointer(in.InPlaceUpdates))
-	if in.CapabilitiesSet != nil {
-		in, out := &in.CapabilitiesSet, &out.CapabilitiesSet
-		*out = make([]core.CapabilitiesSetCapabilities, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_CapabilitiesSetCapabilities_To_core_CapabilitiesSetCapabilities(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.CapabilitiesSet = nil
-	}
+	out.CapabilitiesSet = *(*[]core.CapabilitiesSetCapabilities)(unsafe.Pointer(&in.CapabilitiesSet))
 	return nil
 }
 
@@ -4854,17 +4754,7 @@ func autoConvert_core_MachineImageVersion_To_v1beta1_MachineImageVersion(in *cor
 	out.Architectures = *(*[]string)(unsafe.Pointer(&in.Architectures))
 	out.KubeletVersionConstraint = (*string)(unsafe.Pointer(in.KubeletVersionConstraint))
 	out.InPlaceUpdates = (*InPlaceUpdates)(unsafe.Pointer(in.InPlaceUpdates))
-	if in.CapabilitiesSet != nil {
-		in, out := &in.CapabilitiesSet, &out.CapabilitiesSet
-		*out = make([]CapabilitiesSetCapabilities, len(*in))
-		for i := range *in {
-			if err := Convert_core_CapabilitiesSetCapabilities_To_v1beta1_CapabilitiesSetCapabilities(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.CapabilitiesSet = nil
-	}
+	out.CapabilitiesSet = *(*[]CapabilitiesSetCapabilities)(unsafe.Pointer(&in.CapabilitiesSet))
 	return nil
 }
 
@@ -5097,17 +4987,7 @@ func Convert_core_NamespacedCloudProfile_To_v1beta1_NamespacedCloudProfile(in *c
 
 func autoConvert_v1beta1_NamespacedCloudProfileList_To_core_NamespacedCloudProfileList(in *NamespacedCloudProfileList, out *core.NamespacedCloudProfileList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]core.NamespacedCloudProfile, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_NamespacedCloudProfile_To_core_NamespacedCloudProfile(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]core.NamespacedCloudProfile)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -5118,17 +4998,7 @@ func Convert_v1beta1_NamespacedCloudProfileList_To_core_NamespacedCloudProfileLi
 
 func autoConvert_core_NamespacedCloudProfileList_To_v1beta1_NamespacedCloudProfileList(in *core.NamespacedCloudProfileList, out *NamespacedCloudProfileList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]NamespacedCloudProfile, len(*in))
-		for i := range *in {
-			if err := Convert_core_NamespacedCloudProfile_To_v1beta1_NamespacedCloudProfile(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]NamespacedCloudProfile)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -5140,28 +5010,8 @@ func Convert_core_NamespacedCloudProfileList_To_v1beta1_NamespacedCloudProfileLi
 func autoConvert_v1beta1_NamespacedCloudProfileSpec_To_core_NamespacedCloudProfileSpec(in *NamespacedCloudProfileSpec, out *core.NamespacedCloudProfileSpec, s conversion.Scope) error {
 	out.CABundle = (*string)(unsafe.Pointer(in.CABundle))
 	out.Kubernetes = (*core.KubernetesSettings)(unsafe.Pointer(in.Kubernetes))
-	if in.MachineImages != nil {
-		in, out := &in.MachineImages, &out.MachineImages
-		*out = make([]core.MachineImage, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_MachineImage_To_core_MachineImage(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineImages = nil
-	}
-	if in.MachineTypes != nil {
-		in, out := &in.MachineTypes, &out.MachineTypes
-		*out = make([]core.MachineType, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_MachineType_To_core_MachineType(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineTypes = nil
-	}
+	out.MachineImages = *(*[]core.MachineImage)(unsafe.Pointer(&in.MachineImages))
+	out.MachineTypes = *(*[]core.MachineType)(unsafe.Pointer(&in.MachineTypes))
 	out.VolumeTypes = *(*[]core.VolumeType)(unsafe.Pointer(&in.VolumeTypes))
 	if err := Convert_v1beta1_CloudProfileReference_To_core_CloudProfileReference(&in.Parent, &out.Parent, s); err != nil {
 		return err
@@ -5178,28 +5028,8 @@ func Convert_v1beta1_NamespacedCloudProfileSpec_To_core_NamespacedCloudProfileSp
 func autoConvert_core_NamespacedCloudProfileSpec_To_v1beta1_NamespacedCloudProfileSpec(in *core.NamespacedCloudProfileSpec, out *NamespacedCloudProfileSpec, s conversion.Scope) error {
 	out.CABundle = (*string)(unsafe.Pointer(in.CABundle))
 	out.Kubernetes = (*KubernetesSettings)(unsafe.Pointer(in.Kubernetes))
-	if in.MachineImages != nil {
-		in, out := &in.MachineImages, &out.MachineImages
-		*out = make([]MachineImage, len(*in))
-		for i := range *in {
-			if err := Convert_core_MachineImage_To_v1beta1_MachineImage(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineImages = nil
-	}
-	if in.MachineTypes != nil {
-		in, out := &in.MachineTypes, &out.MachineTypes
-		*out = make([]MachineType, len(*in))
-		for i := range *in {
-			if err := Convert_core_MachineType_To_v1beta1_MachineType(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MachineTypes = nil
-	}
+	out.MachineImages = *(*[]MachineImage)(unsafe.Pointer(&in.MachineImages))
+	out.MachineTypes = *(*[]MachineType)(unsafe.Pointer(&in.MachineTypes))
 	out.VolumeTypes = *(*[]VolumeType)(unsafe.Pointer(&in.VolumeTypes))
 	if err := Convert_core_CloudProfileReference_To_v1beta1_CloudProfileReference(&in.Parent, &out.Parent, s); err != nil {
 		return err
