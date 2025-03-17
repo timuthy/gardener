@@ -70,7 +70,7 @@ var _ = Describe("CloudProfile defaulting", func() {
 	})
 
 	Describe("Architecture defaulting", func() {
-		Context("CloudProfile HAS NO capabilitiesDefinition", func() {
+		Context("Without Capabilities", func() {
 			It("should default the architecture for MachineImageVersion and MachineType", func() {
 				SetObjectDefaults_CloudProfile(obj)
 
@@ -81,8 +81,8 @@ var _ = Describe("CloudProfile defaulting", func() {
 			})
 		})
 
-		Context("cloudProfile HAS capabilitiesDefinition", func() {
-			It("should NOT default the architecture for MachineImageVersion and MachineType", func() {
+		Context("With Capabilities", func() {
+			It("should not default the architecture for MachineImageVersion and MachineType", func() {
 				obj.Spec.CapabilitiesDefinition = Capabilities{
 					v1beta1constants.ArchitectureKey: CapabilityValues{
 						Values: []string{"arm64"},

@@ -342,16 +342,14 @@ message CRI {
   repeated ContainerRuntime containerRuntimes = 2;
 }
 
-// CapabilitiesSetCapabilities is a wrapper for Capabilities.
-// This is a workaround as we cannot define a slice of maps in protobuf.
-// We define custom marshal/unmarshal functions to get around this limitation.
-// If there is a way to avoid this, we should do it.
-message CapabilitiesSetCapabilities {
+// CapabilitiesSet is a wrapper for Capabilities.
+// This is a workaround as the Protobuf generator can't handle a slice of maps.
+message CapabilitiesSet {
   map<string, CapabilityValues> capabilities = 1;
 }
 
-// CapabilityValues is a list of values for a capability.
-// The type is wrapped to represent the values as a comma-separated string in JSON.
+// CapabilityValues contains capability values.
+// This is a workaround as the Protobuf generator can't handle a map with slice values.
 message CapabilityValues {
   repeated string values = 1;
 }
@@ -444,7 +442,7 @@ message CloudProfileSpec {
   // CapabilitiesDefinition contains the definition of all possible capabilities in the CloudProfile.
   // Only capabilities and values defined here can be used to describe MachineImages and MachineTypes.
   // The order of values for a given capability is relevant. The most important value is listed first.
-  // During maintenance upgrades, the image that enables the most important capabilities will be selected.
+  // During maintenance upgrades, the image that matches most capabilities will be selected.
   // +optional
   map<string, CapabilityValues> capabilitiesDefinition = 12;
 }
@@ -1854,7 +1852,7 @@ message MachineImageVersion {
   // CapabilitiesSet is an array of capabilities. Each entry represents a combination of capabilities that is provided by
   // the machine image version.
   // +optional
-  repeated CapabilitiesSetCapabilities capabilitiesSet = 6;
+  repeated CapabilitiesSet capabilitiesSet = 6;
 }
 
 // MachineType contains certain properties of a machine type.

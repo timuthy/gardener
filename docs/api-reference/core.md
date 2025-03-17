@@ -497,7 +497,7 @@ Capabilities
 <p>CapabilitiesDefinition contains the definition of all possible capabilities in the CloudProfile.
 Only capabilities and values defined here can be used to describe MachineImages and MachineTypes.
 The order of values for a given capability is relevant. The most important value is listed first.
-During maintenance upgrades, the image that enables the most important capabilities will be selected.</p>
+During maintenance upgrades, the image that matches most capabilities will be selected.</p>
 </td>
 </tr>
 </table>
@@ -3392,27 +3392,25 @@ CRIName
 <p>CRIName is a type alias for the CRI name string.</p>
 </p>
 <h3 id="core.gardener.cloud/v1beta1.Capabilities">Capabilities
-(<code>map[string]github.com/gardener/gardener/pkg/apis/core/v1beta1.CapabilityValues</code> alias)</p></h3>
+(<code>map[string]..CapabilityValues</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
-<a href="#core.gardener.cloud/v1beta1.CapabilitiesSetCapabilities">CapabilitiesSetCapabilities</a>, 
+<a href="#core.gardener.cloud/v1beta1.CapabilitiesSet">CapabilitiesSet</a>, 
 <a href="#core.gardener.cloud/v1beta1.CloudProfileSpec">CloudProfileSpec</a>, 
 <a href="#core.gardener.cloud/v1beta1.MachineType">MachineType</a>)
 </p>
 <p>
 <p>Capabilities of a machine type or machine image.</p>
 </p>
-<h3 id="core.gardener.cloud/v1beta1.CapabilitiesSetCapabilities">CapabilitiesSetCapabilities
+<h3 id="core.gardener.cloud/v1beta1.CapabilitiesSet">CapabilitiesSet
 </h3>
 <p>
 (<em>Appears on:</em>
 <a href="#core.gardener.cloud/v1beta1.MachineImageVersion">MachineImageVersion</a>)
 </p>
 <p>
-<p>CapabilitiesSetCapabilities is a wrapper for Capabilities.
-This is a workaround as we cannot define a slice of maps in protobuf.
-We define custom marshal/unmarshal functions to get around this limitation.
-If there is a way to avoid this, we should do it.</p>
+<p>CapabilitiesSet is a wrapper for Capabilities.
+This is a workaround as the Protobuf generator can&rsquo;t handle a slice of maps.</p>
 </p>
 <table>
 <thead>
@@ -3439,8 +3437,8 @@ Capabilities
 <h3 id="core.gardener.cloud/v1beta1.CapabilityValues">CapabilityValues
 </h3>
 <p>
-<p>CapabilityValues is a list of values for a capability.
-The type is wrapped to represent the values as a comma-separated string in JSON.</p>
+<p>CapabilityValues contains capability values.
+This is a workaround as the Protobuf generator can&rsquo;t handle a map with slice values.</p>
 </p>
 <table>
 <thead>
@@ -3687,7 +3685,7 @@ Capabilities
 <p>CapabilitiesDefinition contains the definition of all possible capabilities in the CloudProfile.
 Only capabilities and values defined here can be used to describe MachineImages and MachineTypes.
 The order of values for a given capability is relevant. The most important value is listed first.
-During maintenance upgrades, the image that enables the most important capabilities will be selected.</p>
+During maintenance upgrades, the image that matches most capabilities will be selected.</p>
 </td>
 </tr>
 </tbody>
@@ -8287,8 +8285,8 @@ InPlaceUpdates
 <td>
 <code>capabilitiesSet</code></br>
 <em>
-<a href="#core.gardener.cloud/v1beta1.CapabilitiesSetCapabilities">
-[]CapabilitiesSetCapabilities
+<a href="#core.gardener.cloud/v1beta1.CapabilitiesSet">
+[]CapabilitiesSet
 </a>
 </em>
 </td>

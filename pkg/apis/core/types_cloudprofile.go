@@ -67,7 +67,7 @@ type CloudProfileSpec struct {
 	// CapabilitiesDefinition contains the definition of all possible capabilities in the CloudProfile.
 	// Only capabilities and values defined here can be used to describe MachineImages and MachineTypes.
 	// The order of values for a given capability is relevant. The most important value is listed first.
-	// During maintenance upgrades, the image that enables the most important capabilities will be selected.
+	// During maintenance upgrades, the image that matches most capabilities will be selected.
 	CapabilitiesDefinition Capabilities
 }
 
