@@ -57,8 +57,8 @@ type AccessRestrictionWithOptions struct {
 	Options map[string]string `json:"options,omitempty" protobuf:"bytes,2,rep,name=options"`
 }
 
-// CapabilityValues is a list of values for a capability.
-// The type is wrapped to represent the values as a comma-separated string in JSON.
+// CapabilityValues contains capability values.
+// This is a workaround as the Protobuf generator can't handle a map with slice values.
 type CapabilityValues struct {
 	Values []string `protobuf:"bytes,1,rep,name=values"`
 }
@@ -66,21 +66,19 @@ type CapabilityValues struct {
 // Capabilities of a machine type or machine image.
 type Capabilities map[string]CapabilityValues
 
-// CapabilitiesSetCapabilities is a wrapper for Capabilities.
-// This is a workaround as we cannot define a slice of maps in protobuf.
-// We define custom marshal/unmarshal functions to get around this limitation.
-// If there is a way to avoid this, we should do it.
-type CapabilitiesSetCapabilities struct {
+// CapabilitiesSet is a wrapper for Capabilities.
+// This is a workaround as the Protobuf generator can't handle a slice of maps.
+type CapabilitiesSet struct {
 	Capabilities `protobuf:"bytes,1,rep,name=capabilities,casttype=Capabilities"`
 }
 
-// MarshalJSON marshals the CapabilitiesSetCapabilities object to JSON.
-func (c *CapabilitiesSetCapabilities) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the CapabilitiesSet object to JSON.
+func (c *CapabilitiesSet) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Capabilities)
 }
 
-// UnmarshalJSON unmarshals the CapabilitiesSetCapabilities object from JSON.
-func (c *CapabilitiesSetCapabilities) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshals the given data to a CapabilitiesSet
+func (c *CapabilitiesSet) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &c.Capabilities)
 }
 
@@ -99,9 +97,4 @@ func (c *CapabilityValues) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON marshals the CapabilityValues object to JSON.
 func (c CapabilityValues) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Values)
-}
-
-// HasEntries checks if any Capability is defined.
-func (capabilities Capabilities) HasEntries() bool {
-	return len(capabilities) != 0
 }

@@ -146,7 +146,7 @@ type MachineImageVersion struct {
 	// CapabilitiesSet is an array of capabilities. Each entry represents a combination of capabilities that is provided by
 	// the machine image version.
 	// +optional
-	CapabilitiesSet []CapabilitiesSetCapabilities `json:"capabilitiesSet,omitempty" protobuf:"bytes,6,rep,name=capabilitiesSet"`
+	CapabilitiesSet []CapabilitiesSet `json:"capabilitiesSet,omitempty" protobuf:"bytes,6,rep,name=capabilitiesSet"`
 }
 
 // ExpirableVersion contains a version and an expiration date.

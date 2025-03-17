@@ -14,7 +14,7 @@ import (
 func SetDefaults_CloudProfile(cloudProfile *CloudProfile) {
 	// If CapabilitiesDefinition is defined no defaulting for Architecture is required
 	// as the default is defined in the CloudProfile itself in Spec.CapabilitiesDefinition.architecture
-	if cloudProfile.Spec.CapabilitiesDefinition.HasEntries() {
+	if len(cloudProfile.Spec.CapabilitiesDefinition) > 0 {
 		return
 	}
 

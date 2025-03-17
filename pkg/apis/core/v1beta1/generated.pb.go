@@ -771,15 +771,15 @@ func (m *CRI) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CRI proto.InternalMessageInfo
 
-func (m *CapabilitiesSetCapabilities) Reset()      { *m = CapabilitiesSetCapabilities{} }
-func (*CapabilitiesSetCapabilities) ProtoMessage() {}
-func (*CapabilitiesSetCapabilities) Descriptor() ([]byte, []int) {
+func (m *CapabilitiesSet) Reset()      { *m = CapabilitiesSet{} }
+func (*CapabilitiesSet) ProtoMessage() {}
+func (*CapabilitiesSet) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ca37af0df9a5bbd2, []int{26}
 }
-func (m *CapabilitiesSetCapabilities) XXX_Unmarshal(b []byte) error {
+func (m *CapabilitiesSet) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CapabilitiesSetCapabilities) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *CapabilitiesSet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	b = b[:cap(b)]
 	n, err := m.MarshalToSizedBuffer(b)
 	if err != nil {
@@ -787,17 +787,17 @@ func (m *CapabilitiesSetCapabilities) XXX_Marshal(b []byte, deterministic bool) 
 	}
 	return b[:n], nil
 }
-func (m *CapabilitiesSetCapabilities) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CapabilitiesSetCapabilities.Merge(m, src)
+func (m *CapabilitiesSet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CapabilitiesSet.Merge(m, src)
 }
-func (m *CapabilitiesSetCapabilities) XXX_Size() int {
+func (m *CapabilitiesSet) XXX_Size() int {
 	return m.Size()
 }
-func (m *CapabilitiesSetCapabilities) XXX_DiscardUnknown() {
-	xxx_messageInfo_CapabilitiesSetCapabilities.DiscardUnknown(m)
+func (m *CapabilitiesSet) XXX_DiscardUnknown() {
+	xxx_messageInfo_CapabilitiesSet.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CapabilitiesSetCapabilities proto.InternalMessageInfo
+var xxx_messageInfo_CapabilitiesSet proto.InternalMessageInfo
 
 func (m *CapabilityValues) Reset()      { *m = CapabilityValues{} }
 func (*CapabilityValues) ProtoMessage() {}
@@ -5589,8 +5589,8 @@ func init() {
 	proto.RegisterType((*BastionMachineType)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.BastionMachineType")
 	proto.RegisterType((*CARotation)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CARotation")
 	proto.RegisterType((*CRI)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CRI")
-	proto.RegisterType((*CapabilitiesSetCapabilities)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CapabilitiesSetCapabilities")
-	proto.RegisterMapType((Capabilities)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CapabilitiesSetCapabilities.CapabilitiesEntry")
+	proto.RegisterType((*CapabilitiesSet)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CapabilitiesSet")
+	proto.RegisterMapType((Capabilities)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CapabilitiesSet.CapabilitiesEntry")
 	proto.RegisterType((*CapabilityValues)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CapabilityValues")
 	proto.RegisterType((*CloudProfile)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CloudProfile")
 	proto.RegisterType((*CloudProfileList)(nil), "github.com.gardener.gardener.pkg.apis.core.v1beta1.CloudProfileList")
@@ -7855,7 +7855,7 @@ func (m *CRI) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *CapabilitiesSetCapabilities) Marshal() (dAtA []byte, err error) {
+func (m *CapabilitiesSet) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -7865,12 +7865,12 @@ func (m *CapabilitiesSetCapabilities) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CapabilitiesSetCapabilities) MarshalTo(dAtA []byte) (int, error) {
+func (m *CapabilitiesSet) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CapabilitiesSetCapabilities) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *CapabilitiesSet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -18854,7 +18854,7 @@ func (m *CRI) Size() (n int) {
 	return n
 }
 
-func (m *CapabilitiesSetCapabilities) Size() (n int) {
+func (m *CapabilitiesSet) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -23128,7 +23128,7 @@ func (this *CRI) String() string {
 	}, "")
 	return s
 }
-func (this *CapabilitiesSetCapabilities) String() string {
+func (this *CapabilitiesSet) String() string {
 	if this == nil {
 		return "nil"
 	}
@@ -23142,7 +23142,7 @@ func (this *CapabilitiesSetCapabilities) String() string {
 		mapStringForCapabilities += fmt.Sprintf("%v: %v,", k, this.Capabilities[k])
 	}
 	mapStringForCapabilities += "}"
-	s := strings.Join([]string{`&CapabilitiesSetCapabilities{`,
+	s := strings.Join([]string{`&CapabilitiesSet{`,
 		`Capabilities:` + mapStringForCapabilities + `,`,
 		`}`,
 	}, "")
@@ -24293,9 +24293,9 @@ func (this *MachineImageVersion) String() string {
 		repeatedStringForCRI += strings.Replace(strings.Replace(f.String(), "CRI", "CRI", 1), `&`, ``, 1) + ","
 	}
 	repeatedStringForCRI += "}"
-	repeatedStringForCapabilitiesSet := "[]CapabilitiesSetCapabilities{"
+	repeatedStringForCapabilitiesSet := "[]CapabilitiesSet{"
 	for _, f := range this.CapabilitiesSet {
-		repeatedStringForCapabilitiesSet += strings.Replace(strings.Replace(f.String(), "CapabilitiesSetCapabilities", "CapabilitiesSetCapabilities", 1), `&`, ``, 1) + ","
+		repeatedStringForCapabilitiesSet += strings.Replace(strings.Replace(f.String(), "CapabilitiesSet", "CapabilitiesSet", 1), `&`, ``, 1) + ","
 	}
 	repeatedStringForCapabilitiesSet += "}"
 	s := strings.Join([]string{`&MachineImageVersion{`,
@@ -29275,7 +29275,7 @@ func (m *CRI) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CapabilitiesSetCapabilities) Unmarshal(dAtA []byte) error {
+func (m *CapabilitiesSet) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -29298,10 +29298,10 @@ func (m *CapabilitiesSetCapabilities) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CapabilitiesSetCapabilities: wiretype end group for non-group")
+			return fmt.Errorf("proto: CapabilitiesSet: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CapabilitiesSetCapabilities: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: CapabilitiesSet: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -43123,7 +43123,7 @@ func (m *MachineImageVersion) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CapabilitiesSet = append(m.CapabilitiesSet, CapabilitiesSetCapabilities{})
+			m.CapabilitiesSet = append(m.CapabilitiesSet, CapabilitiesSet{})
 			if err := m.CapabilitiesSet[len(m.CapabilitiesSet)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

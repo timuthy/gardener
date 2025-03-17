@@ -5,6 +5,8 @@
 package core
 
 import (
+	"slices"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -62,44 +64,23 @@ type AccessRestrictionWithOptions struct {
 	Options map[string]string
 }
 
-// CapabilityValues is a list of values for a capability.
-// The type is wrapped to represent the values as a comma-separated string in JSON.
+// CapabilityValues contains capability values.
+// This is a workaround as the Protobuf generator can't handle a map with slice values.
 type CapabilityValues struct {
 	Values []string
 }
 
-// Capabilities of a machine type or machine image.
-type Capabilities map[string]CapabilityValues
-
-// CapabilitiesSetCapabilities is a wrapper for Capabilities.
-// This is a workaround as we cannot define a slice of maps in protobuf.
-// We define custom marshal/unmarshal functions to get around this limitation.
-// If there is a way to avoid this, we should do it.
-type CapabilitiesSetCapabilities struct {
-	Capabilities
-}
-
-// Contains checks if the CapabilityValues contains all values
+// Contains checks if the CapabilityValues contains all values.
 func (c *CapabilityValues) Contains(values ...string) bool {
 	for _, value := range values {
-		if !contains(c.Values, value) {
+		if !slices.Contains(c.Values, value) {
 			return false
 		}
 	}
 	return true
 }
 
-// contains checks if an array contains a specific element
-func contains(arr []string, target string) bool {
-	for _, element := range arr {
-		if element == target {
-			return true
-		}
-	}
-	return false
-}
-
-// IsSubsetOf checks if the CapabilityValues is a subset of another CapabilityValues
+// IsSubsetOf checks if the CapabilityValues is a subset of another CapabilityValues.
 func (c *CapabilityValues) IsSubsetOf(other CapabilityValues) bool {
 	for _, value := range c.Values {
 		if !other.Contains(value) {
@@ -109,7 +90,16 @@ func (c *CapabilityValues) IsSubsetOf(other CapabilityValues) bool {
 	return true
 }
 
+// Capabilities of a machine type or machine image.
+type Capabilities map[string]CapabilityValues
+
+// CapabilitiesSet is a wrapper for Capabilities.
+// This is a workaround as the Protobuf generator can't handle a slice of maps.
+type CapabilitiesSet struct {
+	Capabilities
+}
+
 // HasEntries checks if any Capability is defined.
-func (capabilities Capabilities) HasEntries() bool {
-	return len(capabilities) != 0
+func (c Capabilities) HasEntries() bool {
+	return len(c) > 0
 }
