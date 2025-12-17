@@ -24,6 +24,7 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/certificates"
 	extensionsshootwebhook "github.com/gardener/gardener/extensions/pkg/webhook/shoot"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/gardener/gardener/pkg/utils/gardener/operator"
 )
@@ -40,6 +41,8 @@ const (
 	NamespaceFlag = "webhook-config-namespace"
 	// OwnerNamespaceFlag is the name of the command line flag to specify the namespace which is used as the owner reference for the webhook registration.
 	OwnerNamespaceFlag = "webhook-config-owner-namespace"
+	// ExtensionClassFlag is the name of the extension class this extension is responsible for.
+	ExtensionClassFlag = "extension-class"
 )
 
 // ServerOptions are command line options that can be set for ServerConfig.
@@ -54,6 +57,8 @@ type ServerOptions struct {
 	Namespace string
 	// OwnerNamespace is the namespace which is used as the owner reference for the webhook registration.
 	OwnerNamespace string
+	// ExtensionClass defines the extension class this extension is responsible for.
+	ExtensionClass string
 
 	config *ServerConfig
 }
@@ -70,6 +75,8 @@ type ServerConfig struct {
 	Namespace string
 	// OwnerNamespace is the namespace which is used as the owner reference for the webhook registration.
 	OwnerNamespace string
+	// ExtensionClass defines the extension class this extension is responsible for.
+	ExtensionClass extensionsv1alpha1.ExtensionClass
 }
 
 // Complete implements Completer.Complete.
@@ -83,6 +90,7 @@ func (w *ServerOptions) Complete() error {
 		ServicePort:    w.ServicePort,
 		Namespace:      w.Namespace,
 		OwnerNamespace: w.OwnerNamespace,
+		ExtensionClass: extensionsv1alpha1.ExtensionClass(w.ExtensionClass),
 	}
 
 	if len(w.Mode) == 0 {
@@ -104,6 +112,7 @@ func (w *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&w.ServicePort, ServicePortFlag, w.ServicePort, "The service port that exposes the webhook server.  If not specified it will fallback to the webhook server port.")
 	fs.StringVar(&w.Namespace, NamespaceFlag, w.Namespace, "The webhook config namespace where CA bundles, services etc. of the webhook are created.")
 	fs.StringVar(&w.OwnerNamespace, OwnerNamespaceFlag, w.OwnerNamespace, fmt.Sprintf("The namespace used for owner reference of the webhook registration. Defaults to %q flag if not set.", NamespaceFlag))
+	fs.StringVar(&w.ExtensionClass, ExtensionClassFlag, "", "Extension class this extension is responsible for.")
 }
 
 const (

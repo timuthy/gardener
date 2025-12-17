@@ -790,7 +790,7 @@ const (
 	LabelWorkerName = "worker.gardener.cloud/name"
 	// LabelWorkerPool is a constant for a label that indicates the worker pool the node belongs to
 	LabelWorkerPool = "worker.gardener.cloud/pool"
-	// LabelWorkerKubernetesVersion is a constant for a label that indicates the Kubernetes version used for the worker pool nodes.
+	// Label WorkerKubernetesVersion is a constant for a label that indicates the Kubernetes version used for the worker pool nodes.
 	LabelWorkerKubernetesVersion = "worker.gardener.cloud/kubernetes-version"
 	// LabelWorkerPoolDeprecated is a deprecated constant for a label that indicates the worker pool the node belongs to
 	LabelWorkerPoolDeprecated = "worker.garden.sapcloud.io/group"
