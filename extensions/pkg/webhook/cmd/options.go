@@ -215,19 +215,19 @@ type GeneralOptions struct {
 // NewAddToManagerOptions creates new AddToManagerOptions with the given server name, server, and switch options.
 // It is supposed to be used for webhooks which should be automatically registered in the cluster via a MutatingWebhookConfiguration.
 func NewAddToManagerOptions(
-	options GeneralOptions,
+	opts GeneralOptions,
 	serverOpts *ServerOptions,
 	switchOpts *SwitchOptions,
 ) *AddToManagerOptions {
-	name := options.ExtensionName
+	name := opts.ExtensionName
 	if strings.HasPrefix(os.Getenv("WEBHOOK_CONFIG_NAMESPACE"), operator.ExtensionRuntimeNamespacePrefix) {
 		name += extensionswebhook.NameSuffixRuntime
 	}
 
 	return &AddToManagerOptions{
 		extensionName:                   name,
-		shootWebhookManagedResourceName: options.ShootWebhookManagedResourceName,
-		shootNamespaceSelector:          options.ShootNamespaceSelector,
+		shootWebhookManagedResourceName: opts.ShootWebhookManagedResourceName,
+		shootNamespaceSelector:          opts.ShootNamespaceSelector,
 		Server:                          *serverOpts,
 		Switch:                          *switchOpts,
 	}
