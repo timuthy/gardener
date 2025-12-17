@@ -57,11 +57,12 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 		webhookServerOptions = &extensionscmdwebhook.ServerOptions{
 			Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
 		}
-		webhookSwitches = admissioncmd.GardenWebhookSwitchOptions()
-		webhookOptions  = extensionscmdwebhook.NewAddToManagerOptions(
-			AdmissionName,
-			"",
-			nil,
+		webhookSwitches                   = admissioncmd.GardenWebhookSwitchOptions()
+		generalWebhookAddToManagerOptions = extensionscmdwebhook.GeneralOptions{
+			ExtensionName: AdmissionName,
+		}
+		webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(
+			generalWebhookAddToManagerOptions,
 			webhookServerOptions,
 			webhookSwitches,
 		)

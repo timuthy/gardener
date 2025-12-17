@@ -226,7 +226,12 @@ var _ = Describe("Certificates tests", func() {
 				switchOptions = extensionscmdwebhook.NewSwitchOptions(
 					extensionscmdwebhook.Switch(shootMutatingWebhookName, newShootMutatingWebhook),
 				)
-				webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(extensionName, shootWebhookManagedResourceName, shootNamespaceSelector, serverOptions, switchOptions)
+				generalWebhookAddToManagerOptions = extensionscmdwebhook.GeneralOptions{
+					ExtensionName:                   extensionName,
+					ShootWebhookManagedResourceName: shootWebhookManagedResourceName,
+					ShootNamespaceSelector:          shootNamespaceSelector,
+				}
+				webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(generalWebhookAddToManagerOptions, serverOptions, switchOptions)
 			)
 
 			shootWebhookConfig.ValidatingWebhookConfig = nil
@@ -422,7 +427,12 @@ var _ = Describe("Certificates tests", func() {
 					extensionscmdwebhook.Switch(shootMutatingWebhookName, newShootMutatingWebhook),
 					extensionscmdwebhook.Switch(shootValidatingWebhookName, newShootValidatingWebhook),
 				)
-				webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(extensionName, shootWebhookManagedResourceName, shootNamespaceSelector, serverOptions, switchOptions)
+				generalWebhookAddToManagerOptions = extensionscmdwebhook.GeneralOptions{
+					ExtensionName:                   extensionName,
+					ShootWebhookManagedResourceName: shootWebhookManagedResourceName,
+					ShootNamespaceSelector:          shootNamespaceSelector,
+				}
+				webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(generalWebhookAddToManagerOptions, serverOptions, switchOptions)
 			)
 
 			Expect(webhookOptions.Complete()).To(Succeed())

@@ -158,12 +158,15 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 		// options for the prometheus webhook
 		prometheusWebhookOptions = &prometheuswebhook.WebhookOptions{}
 
-		controllerSwitches = ControllerSwitchOptions()
-		webhookSwitches    = WebhookSwitchOptions()
-		webhookOptions     = extensionscmdwebhook.NewAddToManagerOptions(
-			local.Name,
-			genericactuator.ShootWebhooksResourceName,
-			genericactuator.ShootWebhookNamespaceSelector(local.Type),
+		controllerSwitches                = ControllerSwitchOptions()
+		webhookSwitches                   = WebhookSwitchOptions()
+		generalWebhookAddToManagerOptions = extensionscmdwebhook.GeneralOptions{
+			ExtensionName:                   local.Name,
+			ShootWebhookManagedResourceName: genericactuator.ShootWebhooksResourceName,
+			ShootNamespaceSelector:          genericactuator.ShootWebhookNamespaceSelector(local.Type),
+		}
+		webhookOptions = extensionscmdwebhook.NewAddToManagerOptions(
+			generalWebhookAddToManagerOptions,
 			webhookServerOptions,
 			webhookSwitches,
 		)
