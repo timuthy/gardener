@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils"
 )
 
@@ -93,6 +94,8 @@ func BuildWebhookConfigs(
 	servicePort int,
 	mode, url string,
 	caBundle []byte,
+	useAutoNamespaceSelector bool,
+	extensionClass extensionsv1alpha1.ExtensionClass,
 ) (
 	seedWebhookConfigs Configs,
 	shootWebhookConfigs Configs,
@@ -124,6 +127,10 @@ func BuildWebhookConfigs(
 
 		switch webhook.Target {
 		case TargetSeed:
+			if useAutoNamespaceSelector {
+				addNamespaceSelector(webhook, providerName, extensionClass)
+			}
+
 			// if all webhooks for one target are removed in a new version, extensions need to explicitly delete the respective
 			// webhook config
 			createAndAddToWebhookConfig(
@@ -156,6 +163,22 @@ func BuildWebhookConfigs(
 	}
 
 	return seedWebhookConfigs, shootWebhookConfigs, nil
+}
+
+func addNamespaceSelector(webhook *Webhook, extensionType string, extensionClass extensionsv1alpha1.ExtensionClass) {
+	if webhook.NamespaceSelector == nil {
+		webhook.NamespaceSelector = &metav1.LabelSelector{}
+	}
+	if webhook.NamespaceSelector.MatchLabels == nil {
+		webhook.NamespaceSelector.MatchLabels = map[string]string{}
+	}
+
+	switch extensionClass {
+	case "", extensionsv1alpha1.ExtensionClassShoot:
+		webhook.NamespaceSelector.MatchLabels[v1beta1constants.LabelExtensionPrefix+extensionType] = "true"
+	case extensionsv1alpha1.ExtensionClassGarden, extensionsv1alpha1.ExtensionClassSeed:
+		webhook.NamespaceSelector.MatchLabels["kubernetes.io/metadata.name"] = v1beta1constants.GardenNamespace
+	}
 }
 
 // ReconcileSeedWebhookConfig reconciles the given webhook config in the seed cluster.

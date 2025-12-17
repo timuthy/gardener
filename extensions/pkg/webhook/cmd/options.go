@@ -200,6 +200,7 @@ type AddToManagerOptions struct {
 	extensionName                   string
 	shootWebhookManagedResourceName string
 	shootNamespaceSelector          map[string]string
+	useExtensionNamespaceSelector   bool
 
 	Server ServerOptions
 	Switch SwitchOptions
@@ -207,9 +208,17 @@ type AddToManagerOptions struct {
 
 // GeneralOptions contains general AddToManager options.
 type GeneralOptions struct {
-	ExtensionName                   string
+	// ExtensionName is the name of the extension.
+	ExtensionName string
+	// ShootWebhookManagedResourceName is the name of the managed resource that manages the shoot webhooks.
 	ShootWebhookManagedResourceName string
-	ShootNamespaceSelector          map[string]string
+	// ShootNamespaceSelector is the namespace selector for shoot namespaces, considered when reconciling shoot webhooks.
+	ShootNamespaceSelector map[string]string
+	// UseExtensionNamespaceSelector automatically adds a namespace selector for all generated webhook configurations based on the extension class.
+	// - Shoot: namespaces with label "extensions.gardener.cloud/<extension-name>: true"
+	// - Seed: the `garden` namespace
+	// - Garden: the `garden` namespace
+	UseExtensionNamespaceSelector bool
 }
 
 // NewAddToManagerOptions creates new AddToManagerOptions with the given server name, server, and switch options.
@@ -228,6 +237,7 @@ func NewAddToManagerOptions(
 		extensionName:                   name,
 		shootWebhookManagedResourceName: opts.ShootWebhookManagedResourceName,
 		shootNamespaceSelector:          opts.ShootNamespaceSelector,
+		useExtensionNamespaceSelector:   opts.UseExtensionNamespaceSelector,
 		Server:                          *serverOpts,
 		Switch:                          *switchOpts,
 	}
@@ -254,6 +264,7 @@ func (c *AddToManagerOptions) Completed() *AddToManagerConfig {
 		extensionName:                   c.extensionName,
 		shootWebhookManagedResourceName: c.shootWebhookManagedResourceName,
 		shootNamespaceSelector:          c.shootNamespaceSelector,
+		useExtensionNamespaceSelector:   c.useExtensionNamespaceSelector,
 
 		Server: *c.Server.Completed(),
 		Switch: *c.Switch.Completed(),
@@ -265,6 +276,7 @@ type AddToManagerConfig struct {
 	extensionName                   string
 	shootWebhookManagedResourceName string
 	shootNamespaceSelector          map[string]string
+	useExtensionNamespaceSelector   bool
 
 	Server ServerConfig
 	Switch SwitchConfig
@@ -314,6 +326,8 @@ func (c *AddToManagerConfig) AddToManager(ctx context.Context, mgr manager.Manag
 		c.Server.Mode,
 		c.Server.URL,
 		nil,
+		c.useExtensionNamespaceSelector,
+		c.Server.ExtensionClass,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create webhooks: %w", err)
