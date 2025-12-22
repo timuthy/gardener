@@ -58,7 +58,7 @@ type ServerOptions struct {
 	// OwnerNamespace is the namespace which is used as the owner reference for the webhook registration.
 	OwnerNamespace string
 	// ExtensionClass defines the extension class this extension is responsible for.
-	ExtensionClass string
+	ExtensionClass func() string
 
 	config *ServerConfig
 }
@@ -90,7 +90,7 @@ func (w *ServerOptions) Complete() error {
 		ServicePort:    w.ServicePort,
 		Namespace:      w.Namespace,
 		OwnerNamespace: w.OwnerNamespace,
-		ExtensionClass: extensionsv1alpha1.ExtensionClass(w.ExtensionClass),
+		ExtensionClass: extensionsv1alpha1.ExtensionClass(w.ExtensionClass()),
 	}
 
 	if len(w.Mode) == 0 {
@@ -112,7 +112,13 @@ func (w *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&w.ServicePort, ServicePortFlag, w.ServicePort, "The service port that exposes the webhook server.  If not specified it will fallback to the webhook server port.")
 	fs.StringVar(&w.Namespace, NamespaceFlag, w.Namespace, "The webhook config namespace where CA bundles, services etc. of the webhook are created.")
 	fs.StringVar(&w.OwnerNamespace, OwnerNamespaceFlag, w.OwnerNamespace, fmt.Sprintf("The namespace used for owner reference of the webhook registration. Defaults to %q flag if not set.", NamespaceFlag))
-	fs.StringVar(&w.ExtensionClass, ExtensionClassFlag, "", "Extension class this extension is responsible for.")
+
+	extensionClassFlag := fs.Lookup(ExtensionClassFlag)
+	if extensionClassFlag == nil {
+		fs.String(ExtensionClassFlag, "", "Extension class this extension is responsible for.")
+		extensionClassFlag = fs.Lookup(ExtensionClassFlag)
+	}
+	w.ExtensionClass = func() string { return extensionClassFlag.Value.String() }
 }
 
 const (

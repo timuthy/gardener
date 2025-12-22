@@ -23,7 +23,7 @@ type ReconcilerOptions struct {
 	// IgnoreOperationAnnotation defines whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
 	// ExtensionClass defines the extension class this extension is responsible for.
-	ExtensionClass string
+	ExtensionClass func() string
 
 	config *ReconcilerConfig
 }
@@ -31,14 +31,20 @@ type ReconcilerOptions struct {
 // AddFlags implements Flagger.AddFlags.
 func (c *ReconcilerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.IgnoreOperationAnnotation, IgnoreOperationAnnotationFlag, c.IgnoreOperationAnnotation, "Ignore the operation annotation or not.")
-	fs.StringVar(&c.ExtensionClass, ExtensionClassFlag, "", "Extension class this extension is responsible for.")
+
+	extensionClassFlag := fs.Lookup(ExtensionClassFlag)
+	if extensionClassFlag == nil {
+		fs.String(ExtensionClassFlag, "", "Extension class this extension is responsible for.")
+		extensionClassFlag = fs.Lookup(ExtensionClassFlag)
+	}
+	c.ExtensionClass = func() string { return extensionClassFlag.Value.String() }
 }
 
 // Complete implements Completer.Complete.
 func (c *ReconcilerOptions) Complete() error {
 	c.config = &ReconcilerConfig{
 		IgnoreOperationAnnotation: c.IgnoreOperationAnnotation,
-		ExtensionClass:            (extensionsv1alpha1.ExtensionClass)(c.ExtensionClass),
+		ExtensionClass:            (extensionsv1alpha1.ExtensionClass)(c.ExtensionClass()),
 	}
 	return nil
 }
