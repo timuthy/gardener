@@ -15,6 +15,7 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	operatorv1alpha1 "github.com/gardener/gardener/pkg/apis/operator/v1alpha1"
 	operatorv1alpha1helper "github.com/gardener/gardener/pkg/apis/operator/v1alpha1/helper"
@@ -84,7 +85,7 @@ func SecretsManagerForGarden(
 	sm, err := secretsmanager.New(ctx, logger, clock, c, identity, secretsmanager.Config{
 		CASecretAutoRotation: false,
 		SecretNamesToTimes:   lastSecretRotationStartTimesFromGarden(garden, secretConfigs),
-	}, garden.Name)
+	}, v1beta1constants.GardenNamespace)
 	if err != nil {
 		return nil, err
 	}
