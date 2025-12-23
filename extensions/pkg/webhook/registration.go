@@ -26,6 +26,9 @@ import (
 const (
 	// NamePrefix is the prefix used for {Valida,Muta}tingWebhookConfigurations of extensions.
 	NamePrefix = "gardener-extension-"
+	// NameSuffixSeed is the suffix used for {Valida,Muta}tingWebhookConfigurations of extensions targeting a seed
+	// with extension class seed.
+	NameSuffixSeed = "-seed"
 	// NameSuffixShoot is the suffix used for {Valida,Muta}tingWebhookConfigurations of extensions targeting a shoot.
 	NameSuffixShoot = "-shoot"
 	// NameSuffixRuntime is the suffix used for {Valida,Muta}tingWebhookConfigurations of extensions targeting a garden
@@ -113,7 +116,7 @@ func BuildWebhookConfigs(
 
 	for _, webhook := range webhooks {
 		var (
-			name  = NamePrefix + providerName
+			name  = webhookName(providerName, webhook.Target, extensionClass)
 			rules []admissionregistrationv1.RuleWithOperations
 		)
 
@@ -148,7 +151,7 @@ func BuildWebhookConfigs(
 		case TargetShoot:
 			createAndAddToWebhookConfig(
 				&shootWebhookConfigs,
-				name+NameSuffixShoot,
+				name,
 				*webhook,
 				providerName,
 				rules,
@@ -163,6 +166,24 @@ func BuildWebhookConfigs(
 	}
 
 	return seedWebhookConfigs, shootWebhookConfigs, nil
+}
+
+func webhookName(providerName string, target string, extensionClass extensionsv1alpha1.ExtensionClass) string {
+	name := NamePrefix + providerName
+
+	switch target {
+	case TargetSeed:
+		if extensionClass == extensionsv1alpha1.ExtensionClassSeed {
+			name += NameSuffixSeed
+		}
+		if extensionClass == extensionsv1alpha1.ExtensionClassGarden {
+			name += NameSuffixRuntime
+		}
+	case TargetShoot:
+		name += NameSuffixShoot
+	}
+
+	return name
 }
 
 func addNamespaceSelector(webhook *Webhook, extensionType string, extensionClass extensionsv1alpha1.ExtensionClass) {

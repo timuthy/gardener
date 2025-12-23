@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 	"sync/atomic"
 
@@ -26,7 +25,6 @@ import (
 	extensionsshootwebhook "github.com/gardener/gardener/extensions/pkg/webhook/shoot"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/flow"
-	"github.com/gardener/gardener/pkg/utils/gardener/operator"
 )
 
 const (
@@ -234,13 +232,8 @@ func NewAddToManagerOptions(
 	serverOpts *ServerOptions,
 	switchOpts *SwitchOptions,
 ) *AddToManagerOptions {
-	name := opts.ExtensionName
-	if strings.HasPrefix(os.Getenv("WEBHOOK_CONFIG_NAMESPACE"), operator.ExtensionRuntimeNamespacePrefix) {
-		name += extensionswebhook.NameSuffixRuntime
-	}
-
 	return &AddToManagerOptions{
-		extensionName:                   name,
+		extensionName:                   opts.ExtensionName,
 		shootWebhookManagedResourceName: opts.ShootWebhookManagedResourceName,
 		shootNamespaceSelector:          opts.ShootNamespaceSelector,
 		useExtensionNamespaceSelector:   opts.UseExtensionNamespaceSelector,
