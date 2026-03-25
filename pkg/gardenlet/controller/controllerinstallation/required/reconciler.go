@@ -7,12 +7,12 @@ package required
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -20,6 +20,7 @@ import (
 	v1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	gardenletconfigv1alpha1 "github.com/gardener/gardener/pkg/apis/config/gardenlet/v1alpha1"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 )
 
 // Reconciler reconciles ControllerInstallations. It checks whether they are still required by using the
@@ -31,8 +32,7 @@ type Reconciler struct {
 	Clock        clock.Clock
 	SeedName     string
 
-	Lock                *sync.RWMutex
-	KindToRequiredTypes map[string]sets.Set[string]
+	kindToExtensionInfo map[string]extensionInfo
 }
 
 // Reconcile performs the main reconciliation logic.
@@ -54,42 +54,45 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 	}
 
 	var (
-		allKindsCalculated = true
-		required           *bool
-		requiredKindTypes  = sets.New[string]()
-		message            string
+		requiredKindTypes = sets.New[string]()
+		message           string
 	)
 
-	r.Lock.RLock()
 	for _, resource := range controllerRegistration.Spec.Resources {
-		requiredTypes, ok := r.KindToRequiredTypes[resource.Kind]
+		extensionInfo, ok := r.kindToExtensionInfo[resource.Kind]
 		if !ok {
-			allKindsCalculated = false
-			continue
+			return reconcile.Result{}, fmt.Errorf("unknown extension kind: %s", resource.Kind)
 		}
 
-		if requiredTypes.Has(resource.Type) {
-			required = ptr.To(true)
-			requiredKindTypes.Insert(fmt.Sprintf("%s/%s", resource.Kind, resource.Type))
+		extensions := extensionInfo.newListFunc()
+		if err := r.SeedClient.List(ctx, extensions); err != nil {
+			return reconcile.Result{}, fmt.Errorf("error listing extension resources: %w", err)
+		}
+
+		if err := meta.EachListItem(extensions, func(o runtime.Object) error {
+			extensionObj, ok := o.(*extensionsv1alpha1.Extension)
+			if !ok {
+				return fmt.Errorf("expected *extensionsv1alpha1.Extension but got %T", extensionObj)
+			}
+
+			if extensionObj.GetExtensionSpec().GetExtensionType() == resource.Type {
+				requiredKindTypes.Insert(fmt.Sprintf("%s/%s", resource.Kind, resource.Type))
+			}
+
+			return nil
+		}); err != nil {
+			return reconcile.Result{}, fmt.Errorf("error processing extension resources: %w", err)
 		}
 	}
-	r.Lock.RUnlock()
 
-	if required == nil {
-		if !allKindsCalculated {
-			// if required wasn't set yet then but not all kinds were calculated then the it's not possible to
-			// decide yet whether it's required or not
-			return reconcile.Result{}, nil
-		}
-
-		// if required wasn't set yet then but all kinds were calculated then the installation is no longer required
-		required = ptr.To(false)
-		message = "no extension objects exist in the seed having the kind/type combinations the controller is responsible for"
-	} else if *required {
+	installationRequired := len(requiredKindTypes) > 0
+	if installationRequired {
 		message = fmt.Sprintf("extension objects still exist in the seed: %+v", requiredKindTypes.UnsortedList())
+	} else {
+		message = "no extension objects exist in the seed having the kind/type combinations the controller is responsible for"
 	}
 
-	if err := updateControllerInstallationRequiredCondition(ctx, r.GardenClient, r.Clock, controllerInstallation, *required, message); err != nil {
+	if err := updateControllerInstallationRequiredCondition(ctx, r.GardenClient, r.Clock, controllerInstallation, installationRequired, message); err != nil {
 		return reconcile.Result{}, err
 	}
 
