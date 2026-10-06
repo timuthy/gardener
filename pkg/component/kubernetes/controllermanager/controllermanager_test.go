@@ -872,6 +872,47 @@ namespace: kube-system
 				Expect(actualPrometheusRule).To(DeepEqual(expectedPrometheusRule))
 			})
 		})
+
+		When("IsGardenCluster is set", func() {
+			It("should successfully deploy the access secret for the garden cluster", func() {
+				values = Values{
+					RuntimeVersion:    runtimeKubernetesVersion,
+					TargetVersion:     semverVersion,
+					Image:             image,
+					Config:            &kcmConfig,
+					PriorityClassName: priorityClassName,
+					IsWorkerless:      isWorkerless,
+					PodNetworks:       podCIDRs,
+					ServiceNetworks:   serviceCIDRs,
+					IsGardenCluster:   true,
+				}
+				kubeControllerManager = New(testLogger, fakeInterface, namespace, sm, values)
+				kubeControllerManager.SetReplicaCount(replicas)
+
+				Expect(kubeControllerManager.Deploy(ctx)).To(Succeed())
+
+				accessSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "garden-access-kube-controller-manager",
+						Namespace: namespace,
+						Labels: map[string]string{
+							"resources.gardener.cloud/purpose": "token-requestor",
+							"resources.gardener.cloud/class":   "garden",
+						},
+						Annotations: map[string]string{
+							"serviceaccount.resources.gardener.cloud/name":      "kube-controller-manager",
+							"serviceaccount.resources.gardener.cloud/namespace": "kube-system",
+						},
+						ResourceVersion: "1",
+					},
+					Type: corev1.SecretTypeOpaque,
+				}
+
+				actualAccessSecret := &corev1.Secret{}
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(accessSecret), actualAccessSecret)).To(Succeed())
+				Expect(actualAccessSecret).To(Equal(accessSecret))
+			})
+		})
 	})
 
 	Describe("#Destroy", func() {
